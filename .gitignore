@@ -1,0 +1,49 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.env
+.env.local
+
+# FastAPI specific
+instance/
+
+# Logs
+logs/
+*.log
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+
+# Editor files
+.vscode/
+.idea/
+*.iml
+
+# PostgreSQL
+pg_data/
+*.sql
+
+# Celery & Redis
+celerybeat-schedule
+__celery__
+
+# Testing
+.coverage
+htmlcov/
+pytest_cache/
+
+# Static and media files
+static/
+media/
+
+# Misc
+*.swp
+*.swo
+.DS_Store
+
