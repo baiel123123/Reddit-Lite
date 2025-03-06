@@ -19,15 +19,15 @@ services:
     container_name: reddit_back
     env_file:
       - .env
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
       - ./:/app
       - ./static_volume:/app/staticfiles
       - ./media_volume:/app/media
     ports:
-      - "8000:8000"
+      - "8001:8000"
     depends_on:
       - db
-
 
 volumes:
   postgres_data:
