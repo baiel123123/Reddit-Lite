@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import text, String, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
@@ -37,11 +39,12 @@ class SocialLink(Base):
 class User(Base):
     id: Mapped[int_pk]
     username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
-    nickname: Mapped[str] = mapped_column(String(50))
+    nickname: Mapped[str] = mapped_column(String(50), nullable=True)
     email: Mapped[str_uniq] = mapped_column(String(255), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
     gender: Mapped[GenderEnum] = mapped_column(Enum(GenderEnum), nullable=False)
-    about_me: Mapped[str] = mapped_column(String(255))
+    about_me: Mapped[str] = mapped_column(String(255), nullable=True)
+    date_of_birth: Mapped[datetime]
 
     is_user: Mapped[bool] = mapped_column(default=True, server_default=text('true'), nullable=False)
     is_admin: Mapped[bool] = mapped_column(default=False, server_default=text('false'), nullable=False)
@@ -53,7 +56,8 @@ class User(Base):
         return f"{self.__class__.__name__}(id={self.id})"
 
     @validates('password')
-    def validate_password(self, password):
+    def validate_password(self, key, password):
         if 255 > len(password) < 8:
             raise ValueError("Пароль должен быть не менее 8 символов и не больше 255")
         return password
+
