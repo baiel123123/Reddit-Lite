@@ -7,9 +7,13 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
+from pydantic import EmailStr
+
 from src.config.settings import get_auth_data
 
 import datetime
+
+from src.users.dao import UserDao
 
 auth_data = get_auth_data()
 
@@ -37,19 +41,8 @@ def create_access_token(data: dict):
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def decode_access_token(token: str):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
-        return payload
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-
-
-def get_current_user(token: str = Depends(oauth2_scheme)):
-    payload = decode_access_token(token)
-    username: str = payload.get("sub")
-    if username is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-    return {"username": username}
+async def authenticate_user(email: EmailStr, password: str):
+    user = await UserDao.find_one_or_none(email=email)
+    if not user or verify_password(plain_password=password, hashed_password=user.password) is False:
+        return None
+    return user

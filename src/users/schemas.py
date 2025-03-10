@@ -12,6 +12,7 @@ class UserSchema(BaseModel):
     gender: str
     about_me: Optional[str]
     date_of_birth: datetime
+    password: Optional[str]
 
     # @validator("date_of_birth")
     # def validate_date_of_birth(cls, value):
@@ -31,4 +32,9 @@ class SUserRegister(BaseModel):
     email: EmailStr = Field(..., min_length=5, max_length=255, description="Электронная почта")
     date_of_birth: datetime = Field(..., description="Дата рождения в виде YYYY-MM-DD")
     gender: str = Field(..., description="Выберите пол, male, female or other")
+    password: str = Field(..., min_length=5, max_length=50, description="Пароль, от 5 до 50 знаков")
+
+
+class SUserAuth(BaseModel):
+    email: EmailStr = Field(..., description="Электронная почта")
     password: str = Field(..., min_length=5, max_length=50, description="Пароль, от 5 до 50 знаков")
