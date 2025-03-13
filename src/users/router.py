@@ -4,9 +4,9 @@ from src.users.auth import get_password_hash, authenticate_user, create_access_t
 from src.users.dao import UserDao
 from src.users.dependencies import get_current_user, get_current_admin_user
 from src.users.models import User
-from src.users.schemas import UserSchema, UserFindSchema, SUserRegister, SUserAuth
+from src.users.schemas import UserSchema, UserFindSchema, SUserRegister, SUserAuth, SUserRoleUpdate
 
-router = APIRouter(prefix='/users', tags=['Работа с пользователями'])
+router = APIRouter(prefix="/users", tags=['Работа с пользователями'])
 
 
 @router.get("/", summary="Получить всех пользователей")
@@ -54,3 +54,8 @@ async def get_me(user_data: User = Depends(get_current_user)):
 async def logout_user(response: Response):
     response.delete_cookie(key="users_access_token")
     return {'message': 'Пользователь успешно вышел из системы'}
+
+
+@router.put("/user_role_update/")
+async def user_role_update(request_body: SUserRoleUpdate):
+    return await UserDao.update(request_body.user_id, role_id=request_body.role_id)
