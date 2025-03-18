@@ -53,6 +53,9 @@ class User(Base):
     about_me: Mapped[str] = mapped_column(String(255), nullable=True)
     date_of_birth: Mapped[datetime] = mapped_column(nullable=False)
     role_id: Mapped[int] = mapped_column(ForeignKey('roles.id'), nullable=False, default=1, server_default="1")
+    is_verified: Mapped[bool] = mapped_column(default=False, server_default="false")
+    verification_code: Mapped[str] = mapped_column(nullable=True)
+    verification_expires: Mapped[datetime] = mapped_column(nullable=True)
 
     role = relationship("Role", back_populates="user")
     social_links = relationship("SocialLink", back_populates="user")

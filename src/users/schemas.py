@@ -43,3 +43,7 @@ class SUserAuth(BaseModel):
 class SUserRoleUpdate(BaseModel):
     user_id: int
     role_id: int
+
+
+class VerifyEmailSchema(BaseModel):
+    code: str
