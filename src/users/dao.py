@@ -1,0 +1,29 @@
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import update
+
+from src.config.database import async_session_maker
+from src.dao.base import BaseDao
+
+from src.users.models import User
+
+
+class UserDao(BaseDao):
+    model = User
+
+    @classmethod
+    async def update_role(cls, user_id, role_id):
+        async with async_session_maker() as session:
+            async with session.begin():
+                query = (
+                    update(User)
+                    .where(User.id == user_id)
+                    .values(role_id=role_id)
+                    .returning(User)
+                )
+                result = await session.execute(query)
+                try:
+                    await session.commit()
+                except SQLAlchemyError as e:
+                    await session.rollback()
+                    raise e
+                return result.scalars().first()
