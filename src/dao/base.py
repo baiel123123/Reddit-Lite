@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete as sqlalchemy_delete
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError, DataError
 
 from src.config.database import async_session_maker
@@ -66,6 +66,19 @@ class BaseDao:
                     .values(**values)
                     .execution_options(synchronize_session="fetch")
                 )
+                result = await session.execute(query)
+                try:
+                    await session.commit()
+                except SQLAlchemyError as e:
+                    await session.rollback()
+                    raise e
+                return result.rowcount
+
+    @classmethod
+    async def delete_by_id(cls, obj_id: int):
+        async with async_session_maker() as session:
+            async with session.begin():
+                query = sqlalchemy_delete(cls.model).filter_by(id=obj_id)
                 result = await session.execute(query)
                 try:
                     await session.commit()

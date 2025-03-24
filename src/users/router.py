@@ -5,7 +5,7 @@ from src.config.database import get_async_session
 from src.users.auth import (authenticate_user, create_access_token, register_user,
                             verify_email, resend_verification_code)
 from src.users.dao import UserDao
-from src.users.dependencies import get_current_user, get_current_admin_user, get_current_valid_user
+from src.users.dependencies import get_current_user, get_current_admin_user
 from src.users.models import User
 from src.users.schemas import UserSchema, UserFindSchema, SUserRegister, SUserAuth, SUserRoleUpdate, VerifyEmailSchema
 

@@ -59,6 +59,9 @@ class User(Base):
 
     role = relationship("Role", back_populates="user")
     social_links = relationship("SocialLink", back_populates="user")
+    subreddits = relationship("Subreddit", secondary="usersubredditassociations", back_populates="users")
+    comments = relationship("Comment", back_populates="user")
+    posts = relationship("Post", back_populates="user")
 
     def __repr__(self):
         return f"{self.__class__.__name__}(id={self.id})"
