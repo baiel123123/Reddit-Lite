@@ -65,6 +65,7 @@ class BaseDao:
                     .where(*[getattr(cls.model, k) == v for k, v in filter_by.items()])
                     .values(**values)
                     .execution_options(synchronize_session="fetch")
+                    .returning(cls.model)
                 )
                 result = await session.execute(query)
                 try:
@@ -72,17 +73,17 @@ class BaseDao:
                 except SQLAlchemyError as e:
                     await session.rollback()
                     raise e
-                return result.rowcount
+                return result.scalars().one_or_none()
 
     @classmethod
     async def delete_by_id(cls, obj_id: int):
         async with async_session_maker() as session:
             async with session.begin():
-                query = sqlalchemy_delete(cls.model).filter_by(id=obj_id)
+                query = (sqlalchemy_delete(cls.model).filter_by(id=obj_id).returning(cls.model))
                 result = await session.execute(query)
                 try:
                     await session.commit()
                 except SQLAlchemyError as e:
                     await session.rollback()
                     raise e
-                return result.rowcount
+                return result.scalars().one_or_none()

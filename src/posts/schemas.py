@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -13,17 +15,33 @@ class SubRedditCreateSchema(BaseModel):
 
 
 class SubRedditFindSchema(BaseModel):
-    name: str = Field(None, min_length=1, max_length=25)
+    id: Optional[int] = None
+    name: Optional[str] = Field(None, min_length=1, max_length=25)
 
 
 class SubRedditDeleteSchema(BaseModel):
-    id: int
+    id: int = Field(..., min_length=1)
+
+
+class SubRedditUpdateSchema(BaseModel):
+    description: str = Field(..., min_length=1, max_length=50)
 
 
 class PostCreateSchema(BaseModel):
     subreddit_id: int
     title: str = Field(...,  min_length=1, max_length=300)
     content: str = Field(None, max_length=40000)
+
+
+class PostFindSchema(BaseModel):
+    id: Optional[int] = None
+    title: Optional[str] = Field(None, min_length=1, max_length=300)
+
+
+class PostUpdateSchema(BaseModel):
+    title: str = Field(..., min_length=1, max_length=300)
+    content: str = Field(..., max_length=40000)
+    subreddit_id: int
 
 
 class CommentCreateSchema(BaseModel):
