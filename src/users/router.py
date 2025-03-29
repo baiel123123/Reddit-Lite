@@ -12,8 +12,8 @@ from src.users.schemas import UserSchema, UserFindSchema, SUserRegister, SUserAu
 router = APIRouter(prefix="/users", tags=['Работа с пользователями'])
 
 
-@router.post("/register")
-async def register(user_data: SUserRegister):
+@router.post("/register/")
+async def register_user(user_data: SUserRegister):
     return await register_user(user_data)
 
 
@@ -34,25 +34,25 @@ async def logout_user(response: Response):
     return {'message': 'Пользователь успешно вышел из системы'}
 
 
-@router.post("/verify-email-user")
+@router.post("/verify-email/")
 async def verify_email_user(data: VerifyEmailSchema,
                             user: User = Depends(get_current_user),
                             session: AsyncSession = Depends(get_async_session)):
     return await verify_email(data.code, user, session)
 
 
-@router.post("/resend-code")
+@router.post("/resend-code/")
 async def resend_code(user: User = Depends(get_current_user),
                       session: AsyncSession = Depends(get_async_session)):
     return await resend_verification_code(user, session)
 
 
-@router.get("/", summary="Получить всех пользователей", dependencies=[Depends(get_current_admin_user)])
+@router.get("/get_all/", summary="Получить всех пользователей", dependencies=[Depends(get_current_admin_user)])
 async def get_all_users() -> list[UserSchema]:
     return await UserDao.find_all()
 
 
-@router.get("/find_user", summary="поиск юзера")
+@router.get("/find", summary="поиск юзера")
 async def find_users(request_body: UserFindSchema = Depends()) -> list[UserSchema]:
     query = await UserDao.find_by_filter(request_body.dict(exclude_none=True))
     return query
@@ -63,7 +63,7 @@ async def get_me(user_data: User = Depends(get_current_user)):
     return user_data
 
 
-@router.put("/user_role_update/", dependencies=[Depends(get_current_admin_user)])
+@router.put("/role_update/", dependencies=[Depends(get_current_admin_user)])
 async def user_role_update(request_body: SUserRoleUpdate):
     if request_body.role_id == 3:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Вы не можете изменить роль администратора")

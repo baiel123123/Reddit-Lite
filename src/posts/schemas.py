@@ -47,3 +47,7 @@ class PostUpdateSchema(BaseModel):
 class CommentCreateSchema(BaseModel):
     post_id: int
     content: str
+
+
+class CommentUpdateSchema(BaseModel):
+    content: str

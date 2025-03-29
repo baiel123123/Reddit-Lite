@@ -43,10 +43,15 @@ class Comment(Base):
     content: Mapped[str] = mapped_column(String(4000), nullable=False)
     upvote: Mapped[int] = mapped_column(default=0)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    post_id: Mapped[int] = mapped_column(ForeignKey("posts.id"), onupdate="CASCADE")
+    post_id: Mapped[int] = mapped_column(ForeignKey("posts.id", ondelete="CASCADE"))
 
     user = relationship(User, back_populates="comments")
     post = relationship("Post", back_populates="comments")
 
     def __repr__(self):
         return f"{self.__class__.__name__}(id={self.id})"
+
+
+class Vote(Base):
+    id: Mapped[int_pk] = mapped_column(index=True)
+    user_id: Mapped[int] = mapped_column(index=True)
