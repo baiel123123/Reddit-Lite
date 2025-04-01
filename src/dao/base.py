@@ -87,21 +87,3 @@ class BaseDao:
                     await session.rollback()
                     raise e
                 return result.scalars().one_or_none()
-
-    @classmethod
-    async def upvote(cls, obj_id):
-        async with async_session_maker() as session:
-            async with session.begin():
-                query = (
-                    update(cls.model)
-                    .filter_by(id=obj_id)
-                    .values(upvote=cls.model.votes + 1)
-                    .returning(cls.model)
-                )
-                result = await session.execute(query)
-                try:
-                    await session.commit()
-                except SQLAlchemyError as e:
-                    await session.rollback()
-                    raise e
-                return result.scalars().one_or_none()

@@ -21,8 +21,8 @@ class Post(Base):
     title: Mapped[str] = mapped_column(String(300))
     content: Mapped[str] = mapped_column(String(40000), nullable=True)
     upvote: Mapped[int] = mapped_column(default=0)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete='CASCADE', name="fk_post_user_id"), index=True)
-    subreddit_id: Mapped[int] = mapped_column(ForeignKey("subreddits.id", ondelete="CASCADE", name="fk_post_subreddit_id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete='CASCADE'), index=True)
+    subreddit_id: Mapped[int] = mapped_column(ForeignKey("subreddits.id", ondelete="CASCADE"), index=True)
     
     user = relationship(User, back_populates="posts")
     subreddit = relationship("Subreddit", back_populates="posts")
@@ -40,7 +40,7 @@ class Comment(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     post_id: Mapped[int] = mapped_column(ForeignKey("posts.id", ondelete="CASCADE"))
 
-    vote = relationship("Vote", back_populates="post", cascade="all, delete-orphan")
+    # vote = relationship("Vote", back_populates="post", cascade="all, delete-orphan")
     user = relationship(User, back_populates="comments")
     post = relationship("Post", back_populates="comments")
 
@@ -52,6 +52,7 @@ class Vote(Base):
     id: Mapped[int_pk] = mapped_column(index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
     post_id: Mapped[int] = mapped_column(ForeignKey("posts.id", ondelete="CASCADE"), index=True)
+    is_upvote: Mapped[bool] = mapped_column(nullable=False)
 
     user = relationship("User", back_populates="votes")
     post = relationship("Post", back_populates="votes")

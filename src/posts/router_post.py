@@ -32,3 +32,13 @@ async def update_post(post_id: int, response_body: PostUpdateSchema):
 @router.delete("/delete/{post_id}", dependencies=[Depends(get_current_valid_user)])
 async def delete_post(post_id: int):
     return await PostDao.delete_by_id(post_id)
+
+
+@router.post("/upvote/{post_id}")
+async def upvote(post_id: int, is_upvote: bool, user: User = Depends(get_current_valid_user)):
+    return await PostDao.up_vote(post_id, is_upvote, user)
+
+
+@router.post("/delete_upvote/{post_id}", dependencies=[Depends(get_current_valid_user)])
+async def delete_upvote(post_id: int):
+    return await PostDao.delete_vote(post_id)

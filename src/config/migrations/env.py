@@ -11,7 +11,7 @@ import sys
 from os.path import dirname, abspath
 
 from src.users.models import User
-from src.posts.models import Post, Subreddit, Comment
+from src.posts.models import Post, Subreddit, Comment, Vote
 
 from src.config.database import DATABASE_URL, Base
 
