@@ -56,12 +56,13 @@ class User(Base):
     is_verified: Mapped[bool] = mapped_column(default=False, server_default="false")
     verification_code: Mapped[str] = mapped_column(nullable=True)
     verification_expires: Mapped[datetime] = mapped_column(nullable=True)
+    # is_deleted: Mapped[bool] = mapped_column(default=False, server_default="false")
 
     role = relationship("Role", back_populates="user")
     social_links = relationship("SocialLink", back_populates="user")
-    subreddits = relationship("Subreddit", secondary="usersubredditassociations", back_populates="users")
     comments = relationship("Comment", back_populates="user")
     posts = relationship("Post", back_populates="user")
+    votes = relationship("Vote", back_populates="user")
 
     def __repr__(self):
         return f"{self.__class__.__name__}(id={self.id})"
@@ -71,3 +72,17 @@ class User(Base):
         if 255 < len(password) or len(password) < 8:
             raise ValueError("Пароль должен быть не менее 8 символов и не больше 255")
         return password
+
+    # @classmethod
+    # def soft_delete(cls, session, user_id: int):
+    #     user = session.query(cls).get(user_id)
+    #     if user:
+    #         user.is_deleted = True
+    #         session.commit()
+    #
+    # @classmethod
+    # def restore(cls, session, user_id: int):
+    #     user = session.query(cls).get(user_id)
+    #     if user:
+    #         user.is_deleted = False
+    #         session.commit()

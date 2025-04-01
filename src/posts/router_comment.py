@@ -24,7 +24,7 @@ async def get_all_comments():
     return await CommentDao.find_all()
 
 
-@router.put('/update/{comment_id}')
+@router.put('/update/{comment_id}', dependencies=[Depends(get_current_valid_user)])
 async def comment_update(comment_id: int, response_body: CommentUpdateSchema):
     return await CommentDao.update({"id": comment_id}, **response_body.dict())
 
