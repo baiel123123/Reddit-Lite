@@ -32,3 +32,13 @@ async def comment_update(comment_id: int, response_body: CommentUpdateSchema):
 @router.delete("/get_by_id/{comment_id}", dependencies=[Depends(get_current_valid_user)])
 async def delete_comment(comment_id: int):
     return await CommentDao.delete_by_id(comment_id)
+
+
+@router.post("/upvote/{comment_id}")
+async def upvote(comment_id: int, is_upvote: bool, user: User = Depends(get_current_valid_user)):
+    return await CommentDao.up_vote(comment_id, is_upvote, user)
+
+
+@router.post("/delete_upvote/{comment_id}")
+async def delete_upvote(comment_id: int, user: User = Depends(get_current_valid_user)):
+    return await CommentDao.remove_vote(comment_id, user)

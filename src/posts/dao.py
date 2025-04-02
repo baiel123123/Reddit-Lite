@@ -35,22 +35,29 @@ class ForumDao(BaseDao):
                 post = post.scalars().first()
 
                 if not post:
-                    return {"error": "Post not found."}
+                    return {"error": "Post or comment not found."}
 
-                vote_query = select(Vote).filter_by(user_id=user.id, post_id=obj_id)
+                if isinstance(post, Post):
+                    vote_query = select(Vote).filter_by(user_id=user.id, post_id=obj_id)
+                else:
+                    vote_query = select(Vote).filter_by(user_id=user.id, comment_id=obj_id)
+
                 vote_result = await session.execute(vote_query)
                 vote = vote_result.scalars().first()
 
                 if vote:
                     if is_upvote != vote.is_upvote:
-                        print(vote.is_upvote)
                         if is_upvote:
                             post.upvote += 2
                         else:
                             post.upvote -= 2
                         vote.is_upvote = is_upvote
                 else:
-                    new_vote = Vote(user_id=user.id, post_id=post.id, is_upvote=is_upvote)
+                    if isinstance(post, Post):
+                        new_vote = Vote(user_id=user.id, post_id=post.id, is_upvote=is_upvote)
+                    else:
+                        new_vote = Vote(user_id=user.id, comment_id=post.id, is_upvote=is_upvote)
+
                     if is_upvote:
                         post.upvote += 1
                         new_vote.is_upvote = True
@@ -77,7 +84,10 @@ class ForumDao(BaseDao):
                 if not post:
                     return {"error": "Post not found."}
 
-                vote_query = select(Vote).filter_by(user_id=user.id, post_id=obj_id)
+                if isinstance(post, Post):
+                    vote_query = select(Vote).filter_by(user_id=user.id, post_id=obj_id)
+                else:
+                    vote_query = select(Vote).filter_by(user_id=user.id, comment_id=obj_id)
                 vote_result = await session.execute(vote_query)
                 vote = vote_result.scalars().first()
 
