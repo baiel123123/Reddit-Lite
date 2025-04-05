@@ -1,9 +1,11 @@
+from fastapi import HTTPException
 from sqlalchemy import select, delete as sqlalchemy_delete
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.config.database import async_session_maker
 from src.dao.base import BaseDao
-from src.posts.models import Post, Subreddit, Comment, Vote
+from src.posts.models import Post, Subreddit, Comment, Vote, Subscription
+from asyncpg import UniqueViolationError
 
 
 class ForumDao(BaseDao):
@@ -113,6 +115,27 @@ class ForumDao(BaseDao):
 class SubredditDao(ForumDao):
     model = Subreddit
 
+    @classmethod
+    async def add_subreddit(cls, data, user):
+        async with async_session_maker() as session:
+            async with session.begin():
+                new_instance = cls.model(**data)
+                new_instance.created_by = user
+
+                session.add(new_instance)
+                try:
+                    await session.commit()
+                except IntegrityError as e:
+                    await session.rollback()
+                    if isinstance(e.orig, UniqueViolationError):
+                        raise HTTPException(status_code=400, detail="Subreddit already exists")
+                    return {"error": "An unexpected error occurred while adding the post."}
+                except SQLAlchemyError as e:
+                    await session.rollback()
+                    return {"error": "An unexpected error occurred while adding the post."}
+
+                return {"message": f"{cls.model.__name__} added successfully"}
+
 
 class PostDao(ForumDao):
     model = Post
@@ -124,3 +147,7 @@ class CommentDao(ForumDao):
 
 class VoteDao(ForumDao):
     model = Vote
+
+
+class SubscriptionDao(ForumDao):
+    model = Subscription

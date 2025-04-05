@@ -13,7 +13,7 @@ router = APIRouter(prefix="/users", tags=['Работа с пользовате�
 
 
 @router.post("/register/")
-async def register_user(user_data: SUserRegister):
+async def register(user_data: SUserRegister):
     return await register_user(user_data)
 
 

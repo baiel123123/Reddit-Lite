@@ -58,6 +58,8 @@ class User(Base):
     verification_expires: Mapped[datetime] = mapped_column(nullable=True)
     # is_deleted: Mapped[bool] = mapped_column(default=False, server_default="false")
 
+    subscriptions = relationship('Subscription', back_populates='user', cascade="all, delete-orphan")
+    created_subreddits = relationship('Subreddit', back_populates='created_by')
     role = relationship("Role", back_populates="user")
     social_links = relationship("SocialLink", back_populates="user")
     comments = relationship("Comment", back_populates="user")
