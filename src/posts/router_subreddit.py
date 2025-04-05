@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from src.posts.dao import SubredditDao, SubscriptionDao
 from src.posts.schemas import SubRedditCreateSchema, SubRedditFindSchema, SubRedditUpdateSchema
@@ -42,4 +42,18 @@ async def create_subscription(subreddit_id: int, user: User = Depends(get_curren
 
 @router.get("/get_all_subscriptions/{subreddit_id}")
 async def get_all_subscriptions(user: User = Depends(get_current_valid_user)):
-    return await SubscriptionDao.find_by_filter({"user": user})
+    return await SubscriptionDao.find_all_subscriptions({"user": user})
+
+
+@router.delete("/delete_subscription/{subscription_id}", dependencies=[Depends(get_current_valid_user)])
+async def delete_subscription(subscription_id: int, user: User = Depends(get_current_valid_user)):
+    subscription = await SubscriptionDao.find_one_or_none_by_id(subscription_id)
+
+    if not subscription:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+
+    if subscription.user_id != user.id:
+        raise HTTPException(status_code=403, detail="You are not the owner of this subscription")
+
+    await SubscriptionDao.delete_by_id(subscription_id)
+    return {"message": "Subscription deleted successfully"}

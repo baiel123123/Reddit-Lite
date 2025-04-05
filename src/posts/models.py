@@ -1,4 +1,4 @@
-from sqlalchemy import String, ForeignKey
+from sqlalchemy import String, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.config.database import Base, int_pk
@@ -23,6 +23,10 @@ class Subscription(Base):
     id: Mapped[int_pk]
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     subreddit_id: Mapped[int] = mapped_column(ForeignKey("subreddits.id", ondelete="CASCADE"))
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "subreddit_id", name="uix_user_id_subreddit_id"),
+    )
 
     user = relationship('User', back_populates='subscriptions')
     subreddit = relationship('Subreddit', back_populates='subscribers')

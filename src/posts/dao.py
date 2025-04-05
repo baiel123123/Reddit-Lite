@@ -1,6 +1,8 @@
 from fastapi import HTTPException
-from sqlalchemy import select, delete as sqlalchemy_delete
+
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import joinedload
 
 from src.config.database import async_session_maker
 from src.dao.base import BaseDao
@@ -23,7 +25,7 @@ class ForumDao(BaseDao):
                     await session.commit()
                 except IntegrityError:
                     await session.rollback()
-                except SQLAlchemyError as e:
+                except SQLAlchemyError:
                     await session.rollback()
                     return {"error": "An unexpected error occurred while adding the post."}
 
@@ -72,7 +74,7 @@ class ForumDao(BaseDao):
                     await session.commit()
                 except IntegrityError:
                     await session.rollback()
-                except SQLAlchemyError as e:
+                except SQLAlchemyError:
                     await session.rollback()
                     return {"error": "An unexpected error occurred while adding the vote."}
                 return {"message": f"upvoted!"}
@@ -130,7 +132,7 @@ class SubredditDao(ForumDao):
                     if isinstance(e.orig, UniqueViolationError):
                         raise HTTPException(status_code=400, detail="Subreddit already exists")
                     return {"error": "An unexpected error occurred while adding the post."}
-                except SQLAlchemyError as e:
+                except SQLAlchemyError:
                     await session.rollback()
                     return {"error": "An unexpected error occurred while adding the post."}
 
@@ -151,3 +153,10 @@ class VoteDao(ForumDao):
 
 class SubscriptionDao(ForumDao):
     model = Subscription
+
+    @classmethod
+    async def find_all_subscriptions(cls, filter_by):
+        async with async_session_maker() as session:
+            query = select(cls.model).filter_by(**filter_by).options(joinedload(cls.model.subreddit))
+            book = await session.execute(query)
+            return book.scalars().all()
