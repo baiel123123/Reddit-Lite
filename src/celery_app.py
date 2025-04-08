@@ -11,4 +11,4 @@ celery_app = Celery(
 )
 
 celery_app.conf.timezone = "UTC"
-celery_app.autodiscover_tasks(['src.tasks', 'src.tasks.hi'])
+celery_app.autodiscover_tasks(['src.tasks', 'src.tasks.hi', 'src.tasks.send_email'])

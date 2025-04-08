@@ -71,7 +71,7 @@ async def register_user(user_data: SUserRegister):
         verification_expires=datetime.datetime.now() + datetime.timedelta(minutes=10)
     )
 
-    await send_verification_email(user_data.email, verification_code)
+    send_verification_email.apply_async(args=[user_data.email, verification_code])
 
     return {"message": "Код подтверждения отправлен на email"}
 
@@ -114,6 +114,6 @@ async def resend_verification_code(user: User, session: AsyncSession):
     await session.merge(user)
     await session.commit()
 
-    await send_verification_email(user.email, new_code)
+    send_verification_email.apply_async(args=[user.email, new_code])
 
     return {"message": "Новый код подтверждения отправлен на email"}

@@ -1,10 +1,15 @@
 import smtplib
+
 from email.message import EmailMessage
 
-from src.users.dependencies import email_settings
+from src.celery_app import celery_app
+from src.config.settings import get_email_settings
+
+email_settings = get_email_settings()
 
 
-async def send_verification_email(email: str, code: str):
+@celery_app.task
+def send_verification_email(email: str, code: str):
     msg = EmailMessage()
     msg["Subject"] = "Подтверждение регистрации"
     msg["From"] = email_settings["email_from"]
