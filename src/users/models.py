@@ -43,12 +43,6 @@ class Role(Base):
     user = relationship("User", back_populates="role")
 
 
-class UserStatus(PyEnum):
-    ACTIVE = "active"
-    BANNED = "banned"
-    DELETED = "deleted"
-
-
 class User(Base):
     id: Mapped[int_pk]
     username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
@@ -62,8 +56,7 @@ class User(Base):
     is_verified: Mapped[bool] = mapped_column(default=False, server_default="false")
     verification_code: Mapped[str] = mapped_column(nullable=True)
     verification_expires: Mapped[datetime] = mapped_column(nullable=True)
-    # status: Mapped[UserStatus] = mapped_column(Enum(UserStatus), nullable=True, default=UserStatus.ACTIVE,
-    #                                            server_default="active")
+    # is_deleted: Mapped[bool] = mapped_column(default=False, server_default="false")
 
     subscriptions = relationship('Subscription', back_populates='user', cascade="all, delete-orphan")
     created_subreddits = relationship('Subreddit', back_populates='created_by')
