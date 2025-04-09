@@ -62,7 +62,8 @@ class User(Base):
     is_verified: Mapped[bool] = mapped_column(default=False, server_default="false")
     verification_code: Mapped[str] = mapped_column(nullable=True)
     verification_expires: Mapped[datetime] = mapped_column(nullable=True)
-    status: Mapped[UserStatus] = mapped_column(Enum(UserStatus), default=UserStatus.ACTIVE, server_default="active")
+    # status: Mapped[UserStatus] = mapped_column(Enum(UserStatus), nullable=True, default=UserStatus.ACTIVE,
+    #                                            server_default="active")
 
     subscriptions = relationship('Subscription', back_populates='user', cascade="all, delete-orphan")
     created_subreddits = relationship('Subreddit', back_populates='created_by')
