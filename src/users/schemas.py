@@ -3,8 +3,6 @@ from typing import Optional
 
 from pydantic import validator, BaseModel, EmailStr, Field
 
-from src.users.models import UserStatus
-
 
 class UserSchema(BaseModel):
     id: int
@@ -16,11 +14,11 @@ class UserSchema(BaseModel):
     date_of_birth: datetime
     password: Optional[str]
 
-    @property
-    def display_name(self):
-        if self.status == UserStatus.DELETED:
-            return "Аккаунт удалён"
-        return self.nickname or self.username
+    # @validator("date_of_birth")
+    # def validate_date_of_birth(cls, value):
+    #     if value and value >= datetime.now():
+    #         raise ValueError('Дата рождения должна быть в прошлом')
+    #     return value
 
 
 class UserFindSchema(BaseModel):

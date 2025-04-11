@@ -7,7 +7,8 @@ from datetime import datetime, timezone
 from src.config.settings import get_auth_data, get_email_settings
 
 from src.users.dao import UserDao
-from src.users.models import User, UserStatus
+from src.users.models import User
+
 
 email_settings = get_email_settings()
 
@@ -42,30 +43,19 @@ async def get_current_user(token: str = Depends(get_token)):
     return user
 
 
-def check_user_status(user):
-    if user.status == UserStatus.BANNED:
-        raise HTTPException(status_code=403, detail="Аккаунт заблокирован")
-
-    if user.status == UserStatus.DELETED:
-        raise HTTPException(status_code=410, detail="Аккаунт удалён")
-
-
 async def get_current_valid_user(current_user: User = Depends(get_current_user)):
     if current_user.is_verified or current_user.role_id > 1:
         return current_user
-    check_user_status(current_user)
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Вы не авторизовались!')
 
 
 async def get_current_admin_user(current_user: User = Depends(get_current_user)):
-    if current_user.role_id == 2 or current_user.role_id == 3:
+    if current_user.role_id >= 2:
         return current_user
-    check_user_status(current_user)
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Недостаточно прав!')
 
 
 async def get_current_super_admin_user(current_user: User = Depends(get_current_user)):
     if current_user.role_id == 3:
         return current_user
-    check_user_status(current_user)
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Недостаточно прав!')
