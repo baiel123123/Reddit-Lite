@@ -1,7 +1,9 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import validator, BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field
+
+from src.users.models import UserStatus
 
 
 class UserSchema(BaseModel):
@@ -13,12 +15,7 @@ class UserSchema(BaseModel):
     about_me: Optional[str]
     date_of_birth: datetime
     password: Optional[str]
-
-    # @validator("date_of_birth")
-    # def validate_date_of_birth(cls, value):
-    #     if value and value >= datetime.now():
-    #         raise ValueError('Дата рождения должна быть в прошлом')
-    #     return value
+    status: UserStatus
 
 
 class UserFindSchema(BaseModel):

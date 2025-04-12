@@ -22,7 +22,7 @@ async def get_all_subreddit():
 
 @router.get("/find/")
 async def find_subreddit(response_body: SubRedditFindSchema = Depends()):
-    return await SubredditDao.find_by_filter(response_body.dict(exclude_none=True))
+    return await SubredditDao.find_by_filter(**response_body.dict(exclude_none=True))
 
 
 @router.put("/update/{subreddit_id}", dependencies=[Depends(get_current_valid_user)])

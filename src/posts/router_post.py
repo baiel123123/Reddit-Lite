@@ -21,7 +21,7 @@ async def get_all_posts():
 
 @router.get("/find/")
 async def find_post(response_body: PostFindSchema = Depends()):
-    return await PostDao.find_by_filter(response_body.dict(exclude_none=True))
+    return await PostDao.find_by_filter(**response_body.dict(exclude_none=True))
 
 
 @router.put("/update/{post_id}", dependencies=[Depends(get_current_valid_user)])

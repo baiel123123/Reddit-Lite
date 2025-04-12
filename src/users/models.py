@@ -44,9 +44,9 @@ class Role(Base):
 
 
 class UserStatus(str, PyEnum):
-    ACTIVE = "active"
-    BANNED = "banned"
-    DELETED = "deleted"
+    active = "active"
+    banned = "banned"
+    deleted = "deleted"
 
 
 class User(Base):
@@ -63,7 +63,7 @@ class User(Base):
     verification_code: Mapped[str] = mapped_column(nullable=True)
     verification_expires: Mapped[datetime] = mapped_column(nullable=True)
     status: Mapped[UserStatus] = mapped_column(Enum(UserStatus),
-                                               default=UserStatus.ACTIVE,
+                                               default=UserStatus.active,
                                                server_default="active"
                                                )
 

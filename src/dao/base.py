@@ -17,7 +17,7 @@ class BaseDao:
             return book.scalars().all()
 
     @classmethod
-    async def find_by_filter(cls, filter_by):
+    async def find_by_filter(cls, **filter_by):
         async with async_session_maker() as session:
             query = select(cls.model).filter_by(**filter_by)
             book = await session.execute(query)
