@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field
 
-from src.users.models import UserStatus
+from src.users.models import UserStatus, GenderEnum
 
 
 class UserSchema(BaseModel):
@@ -44,3 +44,10 @@ class SUserRoleUpdate(BaseModel):
 
 class VerifyEmailSchema(BaseModel):
     code: str
+
+
+class UserUpdateSchema(BaseModel):
+    nickname: str = Field(None, min_length=3, max_length=50)
+    gender: GenderEnum
+    about_me: str = Field(None, max_length=255)
+    date_of_birth: Optional[datetime] = None
