@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     SMTP_PORT: int
     EMAIL_FROM: str
     EMAIL_PASSWORD: str
+    REDIS_URL: str
     model_config = SettingsConfigDict(
         env_file=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".env")
     )
@@ -40,3 +41,7 @@ def get_email_settings():
         "email_from": settings.EMAIL_FROM,
         "email_password": settings.EMAIL_PASSWORD,
     }
+
+
+def get_redis_url():
+    return settings.REDIS_URL

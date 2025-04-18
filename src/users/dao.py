@@ -1,3 +1,4 @@
+from fastapi import HTTPException, status
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import update
 
@@ -27,3 +28,18 @@ class UserDao(BaseDao):
                     await session.rollback()
                     raise e
                 return result.scalars().first()
+
+    @classmethod
+    async def user_delete(cls, user):
+        async with async_session_maker() as session:
+            async with session.begin():
+                if user.status == "active":
+                    user.status = "deleted"
+                else:
+                    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Вы не можете удалить аккаунт")
+                await session.merge(user)
+                try:
+                    await session.commit()
+                except SQLAlchemyError as e:
+                    await session.rollback()
+                    raise e

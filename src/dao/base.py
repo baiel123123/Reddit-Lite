@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete as sqlalchemy_delete
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError, DataError
 
 from src.config.database import async_session_maker
@@ -17,7 +17,7 @@ class BaseDao:
             return book.scalars().all()
 
     @classmethod
-    async def find_by_filter(cls, filter_by):
+    async def find_by_filter(cls, **filter_by):
         async with async_session_maker() as session:
             query = select(cls.model).filter_by(**filter_by)
             book = await session.execute(query)
@@ -65,6 +65,7 @@ class BaseDao:
                     .where(*[getattr(cls.model, k) == v for k, v in filter_by.items()])
                     .values(**values)
                     .execution_options(synchronize_session="fetch")
+                    .returning(cls.model)
                 )
                 result = await session.execute(query)
                 try:
@@ -72,4 +73,17 @@ class BaseDao:
                 except SQLAlchemyError as e:
                     await session.rollback()
                     raise e
-                return result.rowcount
+                return result.scalars().one_or_none()
+
+    @classmethod
+    async def delete_by_id(cls, obj_id: int):
+        async with async_session_maker() as session:
+            async with session.begin():
+                query = (sqlalchemy_delete(cls.model).filter_by(id=obj_id).returning(cls.model))
+                result = await session.execute(query)
+                try:
+                    await session.commit()
+                except SQLAlchemyError as e:
+                    await session.rollback()
+                    raise e
+                return result.scalars().one_or_none()

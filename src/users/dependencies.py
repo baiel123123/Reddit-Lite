@@ -44,7 +44,9 @@ async def get_current_user(token: str = Depends(get_token)):
 
 
 async def get_current_valid_user(current_user: User = Depends(get_current_user)):
-    if current_user.is_verified or current_user.role_id > 1:
+    if current_user.status == "banned" or current_user.status == "deleted":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Ваш аккаунт забанен или удален!")
+    if current_user.is_verified or current_user.role_id == 2 or current_user.role_id == 3:
         return current_user
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Вы не авторизовались!')
 

@@ -1,12 +1,9 @@
-from email.message import EmailMessage
-
 import jwt
 
 from datetime import timezone
 
 from passlib.context import CryptContext
-
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException
 from fastapi.security import OAuth2PasswordBearer
 
 from pydantic import EmailStr
@@ -16,14 +13,11 @@ from src.config.settings import get_auth_data
 
 import datetime
 
+from src.tasks.send_email import send_verification_email
 from src.users.dao import UserDao
-from src.users.dependencies import email_settings, get_current_user, get_current_valid_user
 from src.users.models import User
 from src.users.schemas import SUserRegister
-
-import random
-
-import smtplib
+from src.utilts import generate_verification_code
 
 auth_data = get_auth_data()
 
@@ -58,26 +52,6 @@ async def authenticate_user(email: EmailStr, password: str):
     return user
 
 
-def generate_verification_code():
-    return str(random.randint(100000, 999999))
-
-
-async def send_verification_email(email: str, code: str):
-    msg = EmailMessage()
-    msg["Subject"] = "Подтверждение регистрации"
-    msg["From"] = email_settings["email_from"]
-    msg["To"] = email
-    msg.set_content(f"Ваш код подтверждения: {code}")
-
-    try:
-        with smtplib.SMTP(email_settings["smtp_server"], email_settings["smtp_port"]) as server:
-            server.starttls()
-            server.login(email_settings["email_from"], email_settings["email_password"])
-            server.send_message(msg)
-    except Exception as e:
-        print(f"Ошибка при отправке email: {e}")
-
-
 async def register_user(user_data: SUserRegister):
     existing_user = await UserDao.find_one_or_none(email=user_data.email)
     if existing_user:
@@ -97,7 +71,7 @@ async def register_user(user_data: SUserRegister):
         verification_expires=datetime.datetime.now() + datetime.timedelta(minutes=10)
     )
 
-    await send_verification_email(user_data.email, verification_code)
+    send_verification_email.apply_async(args=[user_data.email, verification_code])
 
     return {"message": "Код подтверждения отправлен на email"}
 
@@ -140,6 +114,6 @@ async def resend_verification_code(user: User, session: AsyncSession):
     await session.merge(user)
     await session.commit()
 
-    await send_verification_email(user.email, new_code)
+    send_verification_email.apply_async(args=[user.email, new_code])
 
     return {"message": "Новый код подтверждения отправлен на email"}
