@@ -1,11 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from src.posts.dao import SubredditDao, SubscriptionDao
-from src.posts.schemas import SubRedditCreateSchema, SubRedditFindSchema, SubRedditUpdateSchema
-
-from src.users.dependencies import get_current_valid_user, get_current_admin_user, get_current_super_admin_user
+from src.posts.schemas import (
+    SubRedditCreateSchema,
+    SubRedditFindSchema,
+    SubRedditUpdateSchema,
+)
+from src.users.dependencies import (
+    get_current_admin_user,
+    get_current_super_admin_user,
+    get_current_valid_user,
+)
 from src.users.models import User
-
 
 router = APIRouter(prefix="/subreddit", tags=["Работа с сабреддитами"])
 

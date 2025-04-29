@@ -1,14 +1,30 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config.database import get_async_session
-from src.users.auth import (authenticate_user, create_access_token, register_user,
-                            verify_email, resend_verification_code)
+from src.users.auth import (
+    authenticate_user,
+    create_access_token,
+    register_user,
+    resend_verification_code,
+    verify_email,
+)
 from src.users.dao import UserDao
-from src.users.dependencies import get_current_user, get_current_admin_user, get_current_valid_user
+from src.users.dependencies import (
+    get_current_admin_user,
+    get_current_user,
+    get_current_valid_user,
+)
 from src.users.models import User
-from src.users.schemas import UserSchema, UserFindSchema, SUserRegister, SUserAuth, SUserRoleUpdate, VerifyEmailSchema, \
-    UserUpdateSchema
+from src.users.schemas import (
+    SUserAuth,
+    SUserRegister,
+    SUserRoleUpdate,
+    UserFindSchema,
+    UserSchema,
+    UserUpdateSchema,
+    VerifyEmailSchema,
+)
 
 router = APIRouter(prefix="/users", tags=['Работа с пользователями'])
 
@@ -83,11 +99,12 @@ async def user_delete(response: Response, user: User = Depends(get_current_valid
 @router.delete("/delete_by_id/{user_id}", dependencies=[Depends(get_current_admin_user)])
 async def user_delete_by_id(user_id: int):
     user = await UserDao.find_one_or_none_by_id(user_id)
-    res = await UserDao.user_delete(user)
+    await UserDao.user_delete(user)
     return {"message": "Аккаунт успешно удален"}
 
 
 @router.put("/update_user/")
-async def update_user(response_body: UserUpdateSchema, user: User = Depends(get_current_valid_user)):
+async def update_user(response_body: UserUpdateSchema,
+                      user: User = Depends(get_current_valid_user)):
     user = await UserDao.update({"id": user.id}, **response_body.dict(exclude_none=True))
     return user

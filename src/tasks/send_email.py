@@ -1,5 +1,4 @@
 import smtplib
-
 from email.message import EmailMessage
 
 from src.celery_app import celery_app

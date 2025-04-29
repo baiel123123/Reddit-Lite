@@ -1,18 +1,14 @@
-import jwt
-
+import datetime
 from datetime import timezone
 
-from passlib.context import CryptContext
+import jwt
 from fastapi import HTTPException
 from fastapi.security import OAuth2PasswordBearer
-
+from passlib.context import CryptContext
 from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config.settings import get_auth_data
-
-import datetime
-
 from src.tasks.send_email import send_verification_email
 from src.users.dao import UserDao
 from src.users.models import User
@@ -60,7 +56,7 @@ async def register_user(user_data: SUserRegister):
     hashed_password = get_password_hash(user_data.password)
     verification_code = generate_verification_code()
 
-    new_user = await UserDao.add(
+    await UserDao.add(
         username=user_data.username,
         email=user_data.email,
         password=hashed_password,
