@@ -38,5 +38,5 @@ target-version = "py310" # Версия Python
 fix = true               # Автоматическое исправление по команде ruff --fix
 show-fixes = true        # Показывать, что именно исправлено
 
-select = ["E", "F", "B", "I"]   # Включить ошибки: pycodestyle (E), pyflakes (F), bugbear (B), isort (I)
-ignore = ["E501"]              # Не проверять превышение длины строки
+lint.select = ["E", "F", "B", "I"]   # Включить ошибки: pycodestyle (E), pyflakes (F), bugbear (B), isort (I)
+lint.ignore = ["E501"]              # Не проверять превышение длины строки
