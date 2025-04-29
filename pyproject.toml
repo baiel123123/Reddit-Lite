@@ -22,10 +22,21 @@ dependencies = [
     "python-jose (>=3.4.0,<4.0.0)",
     "fastapi-mail (>=1.4.2,<2.0.0)",
     "bcrypt (==4.0.1)",
-    "passlib (==1.7.4)"
+    "passlib (==1.7.4)",
+    "ruff (>=0.11.7,<0.12.0)"
 ]
 
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+
+[tool.ruff]
+line-length = 88         # Максимальная длина строки
+target-version = "py312" # Версия Python
+fix = true               # Автоматическое исправление по команде ruff --fix
+show-fixes = true        # Показывать, что именно исправлено
+
+lint.select = ["E", "F", "B", "I"]   # Включить ошибки: pycodestyle (E), pyflakes (F), bugbear (B), isort (I)
+lint.ignore = ["E501", "B008"]

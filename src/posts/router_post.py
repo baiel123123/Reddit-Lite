@@ -2,8 +2,7 @@ from fastapi import APIRouter, Depends
 
 from src.posts.dao import PostDao
 from src.posts.schemas import PostCreateSchema, PostFindSchema, PostUpdateSchema
-
-from src.users.dependencies import get_current_valid_user, get_current_admin_user
+from src.users.dependencies import get_current_admin_user, get_current_valid_user
 from src.users.models import User
 
 router = APIRouter(prefix="/posts", tags=["Работа с постами"])

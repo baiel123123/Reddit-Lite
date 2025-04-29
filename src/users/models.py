@@ -1,13 +1,10 @@
 from datetime import datetime
+from enum import Enum as PyEnum
 
-from sqlalchemy import String, ForeignKey
+from sqlalchemy import Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from src.config.database import Base, int_pk
-
-from enum import Enum as PyEnum
-
-from sqlalchemy import Enum
 
 
 class SocialPlatform(PyEnum):

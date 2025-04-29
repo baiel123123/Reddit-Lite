@@ -1,10 +1,9 @@
 from fastapi import HTTPException, status
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import update
+from sqlalchemy.exc import SQLAlchemyError
 
 from src.config.database import async_session_maker
 from src.dao.base import BaseDao
-
 from src.users.models import User
 
 
