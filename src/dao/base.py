@@ -1,7 +1,8 @@
+from alembic.util import err
 from fastapi import HTTPException
-
-from sqlalchemy import select, update, delete as sqlalchemy_delete
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError, DataError
+from sqlalchemy import delete as sqlalchemy_delete
+from sqlalchemy import select, update
+from sqlalchemy.exc import DataError, IntegrityError, SQLAlchemyError
 
 from src.config.database import async_session_maker
 
@@ -39,7 +40,7 @@ class BaseDao:
 
     @classmethod
     async def add(cls, **values):
-        async with async_session_maker() as session:
+        async with (async_session_maker() as session):
             async with session.begin():
                 new_instance = cls.model(**values)
                 session.add(new_instance)
@@ -50,7 +51,8 @@ class BaseDao:
                     raise e
                 except DataError:
                     await session.rollback()
-                    raise HTTPException(status_code=400, detail="Некорректные данные (например, слишком длинный email)")
+                    raise HTTPException(status_code=400, detail="Некорректные данные (например, слишком длинный email)"
+                                        ) from err
                 except SQLAlchemyError as e:
                     await session.rollback()
                     raise e

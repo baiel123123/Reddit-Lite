@@ -1,13 +1,12 @@
+from asyncpg import UniqueViolationError
 from fastapi import HTTPException
-
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import joinedload
 
 from src.config.database import async_session_maker
 from src.dao.base import BaseDao
-from src.posts.models import Post, Subreddit, Comment, Vote, Subscription
-from asyncpg import UniqueViolationError
+from src.posts.models import Comment, Post, Subreddit, Subscription, Vote
 
 
 class ForumDao(BaseDao):
@@ -77,7 +76,7 @@ class ForumDao(BaseDao):
                 except SQLAlchemyError:
                     await session.rollback()
                     return {"error": "An unexpected error occurred while adding the vote."}
-                return {"message": f"upvoted!"}
+                return {"message": "upvoted!"}
 
     @classmethod
     async def remove_vote(cls, obj_id, user):
@@ -130,7 +129,7 @@ class SubredditDao(ForumDao):
                 except IntegrityError as e:
                     await session.rollback()
                     if isinstance(e.orig, UniqueViolationError):
-                        raise HTTPException(status_code=400, detail="Subreddit already exists")
+                        raise HTTPException(status_code=400, detail="Subreddit already exists") from None
                     return {"error": "An unexpected error occurred while adding the post."}
                 except SQLAlchemyError:
                     await session.rollback()

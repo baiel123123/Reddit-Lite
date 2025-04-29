@@ -2,8 +2,7 @@ from fastapi import APIRouter, Depends
 
 from src.posts.dao import CommentDao
 from src.posts.schemas import CommentCreateSchema, CommentUpdateSchema
-
-from src.users.dependencies import get_current_valid_user, get_current_admin_user
+from src.users.dependencies import get_current_admin_user, get_current_valid_user
 from src.users.models import User
 
 router = APIRouter(prefix="/comments", tags=["Работа с комментариями"])

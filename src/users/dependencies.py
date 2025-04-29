@@ -1,14 +1,11 @@
-from fastapi import Request, HTTPException, status, Depends
-
-from jose import jwt, JWTError
-
 from datetime import datetime, timezone
 
-from src.config.settings import get_auth_data, get_email_settings
+from fastapi import Depends, HTTPException, Request, status
+from jose import JWTError, jwt
 
+from src.config.settings import get_auth_data, get_email_settings
 from src.users.dao import UserDao
 from src.users.models import User
-
 
 email_settings = get_email_settings()
 
@@ -25,7 +22,7 @@ async def get_current_user(token: str = Depends(get_token)):
         auth_data = get_auth_data()
         payload = jwt.decode(token, auth_data['secret_key'], algorithms=[auth_data['algorithm']])
     except JWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Токен не валидный!')
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Токен не валидный!') from None
 
     expire = payload.get('exp')
     expire_time = datetime.fromtimestamp(int(expire), tz=timezone.utc)

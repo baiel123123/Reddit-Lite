@@ -1,4 +1,5 @@
 from celery import Celery
+
 from src.config.settings import get_redis_url
 
 redis_url = get_redis_url()

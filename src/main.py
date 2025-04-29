@@ -3,14 +3,13 @@ from sqladmin import Admin, ModelView
 
 from src.config.database import engine
 from src.config.settings import get_db_url
-from src.posts.models import Post, Subreddit, Comment, Vote, Subscription
+from src.posts.models import Comment, Post, Subreddit, Vote
+from src.posts.router_comment import router as comment_routers
+from src.posts.router_post import router as post_routers
+from src.posts.router_subreddit import router as subreddit_routers
+from src.tasks.hi import welcome
 from src.users.models import User
 from src.users.router import router as user_routers
-from src.posts.router_subreddit import router as subreddit_routers
-from src.posts.router_post import router as post_routers
-from src.posts.router_comment import router as comment_routers
-
-from src.tasks.hi import welcome
 
 app = FastAPI()
 
@@ -57,4 +56,3 @@ app.include_router(user_routers)
 app.include_router(subreddit_routers)
 app.include_router(comment_routers)
 app.include_router(post_routers)
-

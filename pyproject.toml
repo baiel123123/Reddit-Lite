@@ -25,10 +25,22 @@ dependencies = [
     "passlib (==1.7.4)",
     "setuptools (>=80.0.0,<81.0.0)",
     "aioredis (<2)",
-    "sqladmin (>=0.20.1,<0.21.0)"
+    "sqladmin (>=0.20.1,<0.21.0)",
+    "passlib (==1.7.4)",
+    "ruff (>=0.11.7,<0.12.0)"
 ]
 
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+
+[tool.ruff]
+line-length = 88         # Максимальная длина строки
+target-version = "py312" # Версия Python
+fix = true               # Автоматическое исправление по команде ruff --fix
+show-fixes = true        # Показывать, что именно исправлено
+
+lint.select = ["E", "F", "B", "I"]   # Включить ошибки: pycodestyle (E), pyflakes (F), bugbear (B), isort (I)
+lint.ignore = ["E501", "B008"]

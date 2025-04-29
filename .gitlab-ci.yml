@@ -41,6 +41,18 @@ lint-test-job:   # This job also runs in the test stage.
     - sleep 10
     - echo "No lint issues found."
 
+
+ruff-lint:
+  stage: test
+  image: python:3.12
+  script:
+    - pip install poetry
+    - poetry install
+    - poetry run ruff check .
+  only:
+    - merge_requests
+    - branches
+
 deploy-job:      # This job runs in the deploy stage.
   stage: deploy  # It only runs when *both* jobs in the test stage complete successfully.
   environment: production
