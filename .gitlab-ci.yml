@@ -42,15 +42,16 @@ lint-test-job:   # This job also runs in the test stage.
     - echo "No lint issues found."
 
 
-ruff-lint-job:
+ruff-lint:
+  stage: lint
   image: python:3.12
-  stage: test
-  before_script:
-    - pip install ruff
   script:
-    - echo "Running Ruff linter..."
-    - ruff .
-
+    - pip install poetry
+    - poetry install
+    - poetry run ruff check .
+  only:
+    - merge_requests
+    - branches
 
 deploy-job:      # This job runs in the deploy stage.
   stage: deploy  # It only runs when *both* jobs in the test stage complete successfully.
