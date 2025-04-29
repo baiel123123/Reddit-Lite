@@ -34,7 +34,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
 line-length = 88         # Максимальная длина строки
-target-version = "py310" # Версия Python
+target-version = "py312" # Версия Python
 fix = true               # Автоматическое исправление по команде ruff --fix
 show-fixes = true        # Показывать, что именно исправлено
 
