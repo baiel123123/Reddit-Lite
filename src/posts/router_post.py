@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select
+from sqlalchemy import select, func, Numeric, cast, case
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from src.config.database import get_async_session
 from src.posts.dao import PostDao
@@ -49,23 +50,46 @@ async def delete_upvote(post_id: int, user: User = Depends(get_current_valid_use
 
 
 @router.get("/lenta/")
-async def get_feed(
+async def get_lenta(
     sort_by: str = Query("hot", enum=["hot", "new", "top"]),
-    session: AsyncSession = Depends(get_async_session)
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0),
+    session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(get_current_valid_user)
 ):
-    result = await session.execute(select(Post))
-    posts = result.scalars().all()
+    query = select(Post).options(joinedload(Post.user), joinedload(Post.subreddit))
+
+    # subscribed_ids = [sub.subreddit_id for sub in user.subscriptions]
+    #
+    # subs_query = select(Post).where(Post.subreddit_id.in_(subscribed_ids))
 
     if sort_by == "top":
-        posts.sort(key=lambda p: p.upvote, reverse=True)
+        query = query.order_by(Post.upvote.desc())
     elif sort_by == "new":
-        posts.sort(key=lambda p: p.created_at, reverse=True)
-    else:  # hot
-        posts.sort(key=lambda p: hot_score(p.upvote, p.created_at), reverse=True)
+        query = query.order_by(Post.created_at.desc())
+    elif sort_by == "hot":
+        hot_expr = (
+                func.log(10, func.greatest(func.coalesce(Post.upvote, 0) + 1,1)) * 0.5 +
+                (func.extract('epoch', Post.created_at) / cast(50000, Numeric)) * 0.5
+        )
+
+        query = query.order_by(hot_expr.desc())
+
+    query = query.offset(offset).limit(limit)
+    result = await session.execute(query)
+    posts = result.scalars().all()
 
     return [{
         "id": p.id,
         "title": p.title,
         "upvotes": p.upvote,
-        "created_at": p.created_at
+        "created_at": p.created_at,
+        "user": {
+            "id": p.user_id,
+            "username": p.user.username,
+        },
+        "subreddit": {
+            "id": p.subreddit_id,
+            "name": p.subreddit.name
+        }
     } for p in posts]

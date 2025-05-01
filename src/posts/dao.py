@@ -156,6 +156,6 @@ class SubscriptionDao(ForumDao):
     @classmethod
     async def find_all_subscriptions(cls, filter_by):
         async with async_session_maker() as session:
-            query = select(cls.model).filter_by(**filter_by).options(joinedload(cls.model.subreddit))
+            query = select(cls.model).filter_by(**filter_by)
             book = await session.execute(query)
             return book.scalars().all()
