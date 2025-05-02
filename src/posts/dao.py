@@ -2,7 +2,6 @@ from asyncpg import UniqueViolationError
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from sqlalchemy.orm import joinedload
 
 from src.config.database import async_session_maker
 from src.dao.base import BaseDao

@@ -1,6 +1,5 @@
-import random
-
 import math
+import random
 from datetime import datetime
 
 

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select, func, Numeric, cast, case
+from sqlalchemy import Numeric, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -9,7 +9,6 @@ from src.posts.models import Post
 from src.posts.schemas import PostCreateSchema, PostFindSchema, PostUpdateSchema
 from src.users.dependencies import get_current_admin_user, get_current_valid_user
 from src.users.models import User
-from src.utilts import hot_score
 
 router = APIRouter(prefix="/posts", tags=["Работа с постами"])
 
