@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload
 
 from src.config.database import get_async_session
 from src.posts.dao import PostDao
-from src.posts.models import Post
+from src.posts.models import Post, Subscription
 from src.posts.schemas import PostCreateSchema, PostFindSchema, PostUpdateSchema
 from src.users.dependencies import get_current_admin_user, get_current_valid_user
 from src.users.models import User
@@ -58,9 +58,16 @@ async def get_lenta(
 ):
     query = select(Post).options(joinedload(Post.user), joinedload(Post.subreddit))
 
-    # subscribed_ids = [sub.subreddit_id for sub in user.subscriptions]
-    #
-    # subs_query = select(Post).where(Post.subreddit_id.in_(subscribed_ids))
+    if sort_by in ("top", "new"):
+        sub_ids_result = await session.execute(
+            select(Subscription.subreddit_id).where(Subscription.user_id == user.id)
+        )
+        subscribed_ids = [row[0] for row in sub_ids_result.all()]
+
+        if not subscribed_ids:
+            return []
+
+        query = query.where(Post.subreddit_id.in_(subscribed_ids))
 
     if sort_by == "top":
         query = query.order_by(Post.upvote.desc())
@@ -68,10 +75,9 @@ async def get_lenta(
         query = query.order_by(Post.created_at.desc())
     elif sort_by == "hot":
         hot_expr = (
-                func.log(10, func.greatest(func.coalesce(Post.upvote, 0) + 1,1)) * 0.5 +
-                (func.extract('epoch', Post.created_at) / cast(50000, Numeric)) * 0.5
+            func.log(10, func.greatest(func.coalesce(Post.upvote, 0) + 1, 1)) * 0.5 +
+            (func.extract('epoch', Post.created_at) / cast(50000, Numeric)) * 0.5
         )
-
         query = query.order_by(hot_expr.desc())
 
     query = query.offset(offset).limit(limit)
