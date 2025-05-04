@@ -26,9 +26,9 @@ class GenderEnum(str, PyEnum):
 
 class SocialLink(Base):
     id: Mapped[int_pk]
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False, index=True)
     platform: Mapped[SocialPlatform] = mapped_column(Enum(SocialPlatform), nullable=False)
-    url: Mapped[str] = mapped_column(String(255), nullable=False)
+    url: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
 
     user = relationship("User", back_populates="social_links")
 
@@ -48,9 +48,9 @@ class UserStatus(str, PyEnum):
 
 class User(Base):
     id: Mapped[int_pk]
-    username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
     nickname: Mapped[str] = mapped_column(String(50), nullable=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
     gender: Mapped[GenderEnum] = mapped_column(Enum(GenderEnum), nullable=False)
     about_me: Mapped[str] = mapped_column(String(255), nullable=True)
