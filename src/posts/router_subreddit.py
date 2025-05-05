@@ -46,7 +46,7 @@ async def create_subscription(subreddit_id: int, user: User = Depends(get_curren
     return await SubscriptionDao.add_forum({"subreddit_id": subreddit_id}, user)
 
 
-@router.get("/get_all_subscriptions/")
+@router.get("/get_all_subscriptions/{subreddit_id}")
 async def get_all_subscriptions(user: User = Depends(get_current_valid_user)):
     return await SubscriptionDao.find_all_subscriptions({"user": user})
 

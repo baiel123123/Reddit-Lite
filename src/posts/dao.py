@@ -2,6 +2,7 @@ from asyncpg import UniqueViolationError
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import joinedload
 
 from src.config.database import async_session_maker
 from src.dao.base import BaseDao
@@ -155,6 +156,6 @@ class SubscriptionDao(ForumDao):
     @classmethod
     async def find_all_subscriptions(cls, filter_by):
         async with async_session_maker() as session:
-            query = select(cls.model).filter_by(**filter_by)
+            query = select(cls.model).filter_by(**filter_by).options(joinedload(cls.model.subreddit))
             book = await session.execute(query)
             return book.scalars().all()
