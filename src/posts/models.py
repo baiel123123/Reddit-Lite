@@ -7,7 +7,7 @@ from src.users.models import User
 
 class Subreddit(Base):
     id: Mapped[int_pk]
-    name: Mapped[str] = mapped_column(String(25), unique=True)
+    name: Mapped[str] = mapped_column(String(25), unique=True, index=True)
     description: Mapped[str] = mapped_column(String(50))
     created_by_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=True)
 
@@ -21,8 +21,8 @@ class Subreddit(Base):
 
 class Subscription(Base):
     id: Mapped[int_pk]
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    subreddit_id: Mapped[int] = mapped_column(ForeignKey("subreddits.id", ondelete="CASCADE"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    subreddit_id: Mapped[int] = mapped_column(ForeignKey("subreddits.id", ondelete="CASCADE"), index=True)
 
     __table_args__ = (
         UniqueConstraint("user_id", "subreddit_id", name="uix_user_id_subreddit_id"),
@@ -53,8 +53,8 @@ class Comment(Base):
     id: Mapped[int_pk] = mapped_column(index=True)
     content: Mapped[str] = mapped_column(String(4000), nullable=False)
     upvote: Mapped[int] = mapped_column(default=0)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    post_id: Mapped[int] = mapped_column(ForeignKey("posts.id", ondelete="CASCADE"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    post_id: Mapped[int] = mapped_column(ForeignKey("posts.id", ondelete="CASCADE"), index=True)
 
     votes = relationship("Vote", back_populates="comment", cascade="all, delete-orphan")
     user = relationship(User, back_populates="comments")
@@ -66,9 +66,10 @@ class Comment(Base):
 
 class Vote(Base):
     id: Mapped[int_pk]
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    post_id: Mapped[int] = mapped_column(ForeignKey("posts.id", ondelete="CASCADE"), nullable=True)
-    comment_id: Mapped[int] = mapped_column(ForeignKey("comments.id", ondelete="CASCADE"), nullable=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    post_id: Mapped[int] = mapped_column(ForeignKey("posts.id", ondelete="CASCADE"), nullable=True, index=True)
+    comment_id: Mapped[int] = mapped_column(ForeignKey("comments.id", ondelete="CASCADE"),
+                                            nullable=True, index=True)
     is_upvote: Mapped[bool] = mapped_column(nullable=False)
 
     user = relationship("User", back_populates="votes")
