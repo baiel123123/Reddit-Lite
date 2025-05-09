@@ -49,7 +49,7 @@ def upgrade() -> None:
     op.create_table('sociallinks',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.Column('platform', sa.Enum('CUSTOM', 'FACEBOOK', 'TWITTER', 'INSTAGRAM', 'YOUTUBE', 'TELEGRAM', 'TWITCH', 'DISCORD', name='socialplatform'), nullable=False),
+    sa.Column('platform', social_enum, nullable=False),
     sa.Column('url', sa.String(length=255), nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
