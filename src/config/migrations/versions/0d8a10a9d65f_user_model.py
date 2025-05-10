@@ -18,15 +18,38 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.execute("DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'genderenum') THEN CREATE TYPE genderenum AS ENUM ('MALE', 'FEMALE', 'OTHER'); END IF; END $$;")
-    op.execute("DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'userstatus') THEN CREATE TYPE userstatus AS ENUM ('ACTIVE', 'BANNED', 'DELETED'); END IF; END $$;")
-    op.execute("DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'socialplatform') THEN CREATE TYPE socialplatform AS ENUM ('CUSTOM', 'FACEBOOK', 'TWITTER', 'INSTAGRAM', 'YOUTUBE', 'TELEGRAM', 'TWITCH', 'DISCORD'); END IF; END $$;")
+    # Создание ENUM-типов с проверкой на существование
+    op.execute("""
+        DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'genderenum') THEN
+                CREATE TYPE genderenum AS ENUM ('MALE', 'FEMALE', 'OTHER');
+            END IF;
+        END $$;
+    """)
+    op.execute("""
+        DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'userstatus') THEN
+                CREATE TYPE userstatus AS ENUM ('ACTIVE', 'BANNED', 'DELETED');
+            END IF;
+        END $$;
+    """)
+    op.execute("""
+        DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'socialplatform') THEN
+                CREATE TYPE socialplatform AS ENUM ('CUSTOM', 'FACEBOOK', 'TWITTER', 'INSTAGRAM', 'YOUTUBE', 'TELEGRAM', 'TWITCH', 'DISCORD');
+            END IF;
+        END $$;
+    """)
 
-    gender_enum = sa.Enum('MALE', 'FEMALE', 'OTHER', name='genderenum')
-    status_enum = sa.Enum('ACTIVE', 'BANNED', 'DELETED', name='userstatus')
-    social_enum = sa.Enum('CUSTOM', 'FACEBOOK', 'TWITTER', 'INSTAGRAM', 'YOUTUBE', 'TELEGRAM', 'TWITCH', 'DISCORD', name='socialplatform')
+    # Использование уже существующих ENUM-типов
+    gender_enum = sa.Enum('MALE', 'FEMALE', 'OTHER', name='genderenum', create_type=False)
+    status_enum = sa.Enum('ACTIVE', 'BANNED', 'DELETED', name='userstatus', create_type=False)
+    social_enum = sa.Enum(
+        'CUSTOM', 'FACEBOOK', 'TWITTER', 'INSTAGRAM', 'YOUTUBE', 'TELEGRAM', 'TWITCH', 'DISCORD',
+        name='socialplatform', create_type=False
+    )
 
-    # таблицы ниже без вызова create() — типы уже созданы
+    # Создание таблицы users
     op.create_table('users',
         sa.Column('id', sa.Integer(), primary_key=True),
         sa.Column('username', sa.String(length=50), nullable=False, unique=True),
@@ -44,17 +67,16 @@ def upgrade() -> None:
         sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     )
 
+    # Создание таблицы sociallinks
     op.create_table('sociallinks',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), primary_key=True),
         sa.Column('user_id', sa.Integer(), nullable=False),
         sa.Column('platform', social_enum, nullable=False),
         sa.Column('url', sa.String(length=255), nullable=False),
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
         sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-        sa.ForeignKeyConstraint(['user_id'], ['users.id']),
-        sa.PrimaryKeyConstraint('id')
+        sa.ForeignKeyConstraint(['user_id'], ['users.id'])
     )
-    # ### end Alembic commands ###
 
 
 def downgrade() -> None:
