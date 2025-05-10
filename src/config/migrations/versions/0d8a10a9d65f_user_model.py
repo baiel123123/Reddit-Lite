@@ -18,77 +18,41 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Создание ENUM-типов, если они не существуют
-    op.execute("""
-        DO $$ BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'genderenum') THEN
-                CREATE TYPE genderenum AS ENUM ('MALE', 'FEMALE', 'OTHER');
-            END IF;
-        END $$;
-    """)
-    op.execute("""
-        DO $$ BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'userstatus') THEN
-                CREATE TYPE userstatus AS ENUM ('ACTIVE', 'BANNED', 'DELETED');
-            END IF;
-        END $$;
-    """)
-    op.execute("""
-        DO $$ BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'socialplatform') THEN
-                CREATE TYPE socialplatform AS ENUM (
-                    'CUSTOM', 'FACEBOOK', 'TWITTER', 'INSTAGRAM',
-                    'YOUTUBE', 'TELEGRAM', 'TWITCH', 'DISCORD'
-                );
-            END IF;
-        END $$;
-    """)
-
-    # Использование существующих ENUM-типов
-    gender_enum = sa.Enum('MALE', 'FEMALE', 'OTHER', name='genderenum', create_type=False)
-    status_enum = sa.Enum('ACTIVE', 'BANNED', 'DELETED', name='userstatus', create_type=False)
-    social_enum = sa.Enum(
-        'CUSTOM', 'FACEBOOK', 'TWITTER', 'INSTAGRAM', 'YOUTUBE',
-        'TELEGRAM', 'TWITCH', 'DISCORD',
-        name='socialplatform',
-        create_type=False
-    )
-
-    # Таблица users
-    op.create_table(
-        'users',
-        sa.Column('id', sa.Integer(), primary_key=True),
-        sa.Column('username', sa.String(length=50), nullable=False, unique=True),
-        sa.Column('nickname', sa.String(length=50), nullable=True),
-        sa.Column('email', sa.String(length=255), nullable=False, unique=True),
-        sa.Column('password', sa.String(length=255), nullable=False),
-        sa.Column('gender', gender_enum, nullable=False),
-        sa.Column('status', status_enum, nullable=False, server_default='ACTIVE'),
-        sa.Column('about_me', sa.String(length=255), nullable=True),
-        sa.Column('date_of_birth', sa.DateTime(), nullable=False),
-        sa.Column('is_user', sa.Boolean(), nullable=False, server_default=sa.text('true')),
-        sa.Column('is_admin', sa.Boolean(), nullable=False, server_default=sa.text('false')),
-        sa.Column('is_super_admin', sa.Boolean(), nullable=False, server_default=sa.text('false')),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-    )
-
-    # Таблица sociallinks
-    op.create_table(
-        'sociallinks',
-        sa.Column('id', sa.Integer(), primary_key=True),
-        sa.Column('user_id', sa.Integer(), nullable=False),
-        sa.Column('platform', social_enum, nullable=False),
-        sa.Column('url', sa.String(length=255), nullable=False),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.ForeignKeyConstraint(['user_id'], ['users.id']),
-    )
+    op.create_table('users',
+                    sa.Column('id', sa.Integer(), nullable=False),
+                    sa.Column('username', sa.String(length=50), nullable=False),
+                    sa.Column('nickname', sa.String(length=50), nullable=True),
+                    sa.Column('email', sa.String(length=255), nullable=False),
+                    sa.Column('password', sa.String(length=255), nullable=False),
+                    sa.Column('gender', sa.Enum('MALE', 'FEMALE', 'OTHER', name='genderenum'), nullable=False),
+                    sa.Column('about_me', sa.String(length=255), nullable=True),
+                    sa.Column('date_of_birth', sa.DateTime(), nullable=False),
+                    sa.Column('is_user', sa.Boolean(), server_default=sa.text('true'), nullable=False),
+                    sa.Column('is_admin', sa.Boolean(), server_default=sa.text('false'), nullable=False),
+                    sa.Column('is_super_admin', sa.Boolean(), server_default=sa.text('false'), nullable=False),
+                    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+                    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+                    sa.PrimaryKeyConstraint('id'),
+                    sa.UniqueConstraint('email'),
+                    sa.UniqueConstraint('username')
+                    )
+    op.create_table('sociallinks',
+                    sa.Column('id', sa.Integer(), nullable=False),
+                    sa.Column('user_id', sa.Integer(), nullable=False),
+                    sa.Column('platform',
+                              sa.Enum('CUSTOM', 'FACEBOOK', 'TWITTER', 'INSTAGRAM', 'YOUTUBE', 'TELEGRAM', 'TWITCH',
+                                      'DISCORD', name='socialplatform'), nullable=False),
+                    sa.Column('url', sa.String(length=255), nullable=False),
+                    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+                    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+                    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+                    sa.PrimaryKeyConstraint('id')
+                    )
+    # ### end Alembic commands ###
 
 
 def downgrade() -> None:
+    # ### commands auto generated by Alembic - please adjust! ###
     op.drop_table('sociallinks')
     op.drop_table('users')
-    op.execute("DROP TYPE IF EXISTS socialplatform;")
-    op.execute("DROP TYPE IF EXISTS userstatus;")
-    op.execute("DROP TYPE IF EXISTS genderenum;")
+    # ### end Alembic commands ###
