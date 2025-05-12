@@ -54,8 +54,20 @@ ruff-lint:
     - branches
 
 deploy-job:      # This job runs in the deploy stage.
-  stage: deploy  # It only runs when *both* jobs in the test stage complete successfully.
+  stage: deploy
+  image: alpine:latest
+  only:
+    - main
   environment: production
+  before_script:
+    - apk add --no-cache openssh
   script:
-    - echo "Deploying application..."
-    - echo "Application successfully deployed."
+    - echo "Starting deployment..."
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" 'mkdir -p ~/project'
+    - tar czf project.tar.gz ./*
+    - scp -o StrictHostKeyChecking=no project.tar.gz "$SSH_USER@$SSH_HOST":~/project/
+    - ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" 'cd ~/project && tar xzf project.tar.gz && ./deploy.sh'
+    - echo "Deployment complete."

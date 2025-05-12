@@ -14,7 +14,9 @@ router = APIRouter(prefix="/posts", tags=["Работа с постами"])
 
 
 @router.post("/create/")
-async def create_post(post_data: PostCreateSchema, user: User = Depends(get_current_valid_user)):
+async def create_post(
+    post_data: PostCreateSchema, user: User = Depends(get_current_valid_user)
+):
     return await PostDao.add_forum(post_data.dict(), user)
 
 
@@ -39,7 +41,9 @@ async def delete_post(post_id: int):
 
 
 @router.post("/upvote/{post_id}")
-async def upvote(post_id: int, is_upvote: bool, user: User = Depends(get_current_valid_user)):
+async def upvote(
+    post_id: int, is_upvote: bool, user: User = Depends(get_current_valid_user)
+):
     return await PostDao.up_vote(post_id, is_upvote, user)
 
 
@@ -54,7 +58,7 @@ async def get_lenta(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0),
     session: AsyncSession = Depends(get_async_session),
-    user: User = Depends(get_current_valid_user)
+    user: User = Depends(get_current_valid_user),
 ):
     query = select(Post).options(joinedload(Post.user), joinedload(Post.subreddit))
 
@@ -75,26 +79,26 @@ async def get_lenta(
         query = query.order_by(Post.created_at.desc())
     elif sort_by == "hot":
         hot_expr = (
-            func.log(10, func.greatest(func.coalesce(Post.upvote, 0) + 1, 1)) * 0.5 +
-            (func.extract('epoch', Post.created_at) / cast(50000, Numeric)) * 0.5
+            func.log(10, func.greatest(func.coalesce(Post.upvote, 0) + 1, 1)) * 0.5
+            + (func.extract("epoch", Post.created_at) / cast(50000, Numeric)) * 0.5
         )
         query = query.order_by(hot_expr.desc())
 
     query = query.offset(offset).limit(limit)
     result = await session.execute(query)
     posts = result.scalars().all()
-
-    return [{
-        "id": p.id,
-        "title": p.title,
-        "upvotes": p.upvote,
-        "created_at": p.created_at,
-        "user": {
-            "id": p.user_id,
-            "username": p.user.username,
-        },
-        "subreddit": {
-            "id": p.subreddit_id,
-            "name": p.subreddit.name
+    # TODO: return сделать в pydantic schema
+    return [
+        {
+            "id": p.id,
+            "title": p.title,
+            "upvotes": p.upvote,
+            "created_at": p.created_at,
+            "user": {
+                "id": p.user_id,
+                "username": p.user.username,
+            },
+            "subreddit": {"id": p.subreddit_id, "name": p.subreddit.name},
         }
-    } for p in posts]
+        for p in posts
+    ]
