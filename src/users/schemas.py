@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, validator
 
 from src.users.models import GenderEnum, UserStatus
 
@@ -25,16 +25,24 @@ class UserFindSchema(BaseModel):
 
 
 class SUserRegister(BaseModel):
-    username: str = Field(..., min_length=3, max_length=50, description="username до 50")
-    email: EmailStr = Field(..., min_length=5, max_length=255, description="Электронная почта")
+    username: str = Field(
+        ..., min_length=3, max_length=50, description="username до 50"
+    )
+    email: EmailStr = Field(
+        ..., min_length=5, max_length=255, description="Электронная почта"
+    )
     date_of_birth: datetime = Field(..., description="Дата рождения в виде YYYY-MM-DD")
     gender: str = Field(..., description="Выберите пол, male, female or other")
-    password: str = Field(..., min_length=5, max_length=50, description="Пароль, от 5 до 50 знаков")
+    password: str = Field(
+        ..., min_length=5, max_length=50, description="Пароль, от 5 до 50 знаков"
+    )
 
 
 class SUserAuth(BaseModel):
     email: EmailStr = Field(..., description="Электронная почта")
-    password: str = Field(..., min_length=5, max_length=50, description="Пароль, от 5 до 50 знаков")
+    password: str = Field(
+        ..., min_length=5, max_length=50, description="Пароль, от 5 до 50 знаков"
+    )
 
 
 class SUserRoleUpdate(BaseModel):
@@ -47,7 +55,16 @@ class VerifyEmailSchema(BaseModel):
 
 
 class UserUpdateSchema(BaseModel):
-    nickname: str = Field(None, min_length=3, max_length=50)
-    gender: GenderEnum
-    about_me: str = Field(None, max_length=255)
+    nickname: Optional[str] = Field(None, min_length=3, max_length=50)
+    gender: Optional[GenderEnum] = None
+    about_me: Optional[str] = Field(None, max_length=255)
     date_of_birth: Optional[datetime] = None
+
+    @validator("*", pre=True)
+    def empty_str_to_none(cls, v):
+        if isinstance(v, str) and v.strip() == "":
+            return None
+        return v
+
+
+# TODO: DATA NE OBNOVLYAETSA KAKOGTO HRENA
