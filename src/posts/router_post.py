@@ -87,12 +87,12 @@ async def get_lenta(
     query = query.offset(offset).limit(limit)
     result = await session.execute(query)
     posts = result.scalars().all()
-    # TODO: return сделать в pydantic schema
 
     return [
         {
             "id": p.id,
             "title": p.title,
+            "content": p.content,
             "upvotes": p.upvote,
             "created_at": p.created_at,
             "user": {
