@@ -67,4 +67,5 @@ class UserUpdateSchema(BaseModel):
         return v
 
 
-# TODO: DATA NE OBNOVLYAETSA KAKOGTO HRENA
+class TokenRefreshRequest(BaseModel):
+    refresh_token: str
