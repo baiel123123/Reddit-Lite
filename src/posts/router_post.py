@@ -103,3 +103,23 @@ async def get_lenta(
         }
         for p in posts
     ]
+
+
+@router.get("/my_posts/")
+async def get_my_posts(
+    user: User = Depends(get_current_valid_user),
+):
+    return await PostDao.find_my_posts(user_id=user.id)
+
+
+@router.get("/{post_id}")
+async def get_post_by_id(post_id: int):
+    post = await PostDao.find_one_or_none(id=post_id)
+    if not post:
+        return {"detail": "Post not found"}
+    return post
+
+
+@router.get("/user_posts/")
+async def get_user_posts(user_id: int):
+    return await PostDao.find_my_posts(user_id=user_id)

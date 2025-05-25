@@ -25,7 +25,9 @@ class ForumDao(BaseDao):
                     await session.rollback()
                 except SQLAlchemyError:
                     await session.rollback()
-                    return {"error": "An unexpected error occurred while adding the post."}
+                    return {
+                        "error": "An unexpected error occurred while adding the post."
+                    }
 
                 return {"message": f"{cls.model.__name__} added successfully"}
 
@@ -42,7 +44,9 @@ class ForumDao(BaseDao):
                 if isinstance(post, Post):
                     vote_query = select(Vote).filter_by(user_id=user.id, post_id=obj_id)
                 else:
-                    vote_query = select(Vote).filter_by(user_id=user.id, comment_id=obj_id)
+                    vote_query = select(Vote).filter_by(
+                        user_id=user.id, comment_id=obj_id
+                    )
 
                 vote_result = await session.execute(vote_query)
                 vote = vote_result.scalars().first()
@@ -56,9 +60,13 @@ class ForumDao(BaseDao):
                         vote.is_upvote = is_upvote
                 else:
                     if isinstance(post, Post):
-                        new_vote = Vote(user_id=user.id, post_id=post.id, is_upvote=is_upvote)
+                        new_vote = Vote(
+                            user_id=user.id, post_id=post.id, is_upvote=is_upvote
+                        )
                     else:
-                        new_vote = Vote(user_id=user.id, comment_id=post.id, is_upvote=is_upvote)
+                        new_vote = Vote(
+                            user_id=user.id, comment_id=post.id, is_upvote=is_upvote
+                        )
 
                     if is_upvote:
                         post.upvote += 1
@@ -74,8 +82,10 @@ class ForumDao(BaseDao):
                     await session.rollback()
                 except SQLAlchemyError:
                     await session.rollback()
-                    return {"error": "An unexpected error occurred while adding the vote."}
-                return {"message": "upvoted!"}
+                    return {
+                        "error": "An unexpected error occurred while adding the vote."
+                    }
+                return {"message": "upvoted!", "upvotes": post.upvote}
 
     @classmethod
     async def remove_vote(cls, obj_id, user):
@@ -89,7 +99,9 @@ class ForumDao(BaseDao):
                 if isinstance(post, Post):
                     vote_query = select(Vote).filter_by(user_id=user.id, post_id=obj_id)
                 else:
-                    vote_query = select(Vote).filter_by(user_id=user.id, comment_id=obj_id)
+                    vote_query = select(Vote).filter_by(
+                        user_id=user.id, comment_id=obj_id
+                    )
                 vote_result = await session.execute(vote_query)
                 vote = vote_result.scalars().first()
 
@@ -105,9 +117,11 @@ class ForumDao(BaseDao):
                         await session.commit()
                     except SQLAlchemyError:
                         await session.rollback()
-                        return {"error": "An unexpected error occurred while removing the vote."}
+                        return {
+                            "error": "An unexpected error occurred while removing the vote."
+                        }
 
-                    return {"message": "Vote removed!"}
+                    return {"message": "Vote removed!", "upvotes": post.upvote}
 
                 return {"error": "Vote not found."}
 
@@ -128,17 +142,30 @@ class SubredditDao(ForumDao):
                 except IntegrityError as e:
                     await session.rollback()
                     if isinstance(e.orig, UniqueViolationError):
-                        raise HTTPException(status_code=400, detail="Subreddit already exists") from None
-                    return {"error": "An unexpected error occurred while adding the post."}
+                        raise HTTPException(
+                            status_code=400, detail="Subreddit already exists"
+                        ) from None
+                    return {
+                        "error": "An unexpected error occurred while adding the post."
+                    }
                 except SQLAlchemyError:
                     await session.rollback()
-                    return {"error": "An unexpected error occurred while adding the post."}
+                    return {
+                        "error": "An unexpected error occurred while adding the post."
+                    }
 
                 return {"message": f"{cls.model.__name__} added successfully"}
 
 
 class PostDao(ForumDao):
     model = Post
+
+    @classmethod
+    async def find_my_posts(cls, **filter_by):
+        async with async_session_maker() as session:
+            query = select(Post).filter_by(**filter_by).order_by(Post.created_at.desc())
+            book = await session.execute(query)
+            return book.scalars().all()
 
 
 class CommentDao(ForumDao):
