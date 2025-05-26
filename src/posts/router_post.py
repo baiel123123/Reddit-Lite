@@ -6,7 +6,11 @@ from sqlalchemy.orm import joinedload
 from src.config.database import get_async_session
 from src.posts.dao import PostDao
 from src.posts.models import Post, Subscription
-from src.posts.schemas import PostCreateSchema, PostFindSchema, PostUpdateSchema
+from src.posts.schemas import (
+    PostCreateSchema,
+    PostFindSchema,
+    PostUpdateSchema,
+)
 from src.users.dependencies import get_current_admin_user, get_current_valid_user
 from src.users.models import User
 
@@ -93,7 +97,7 @@ async def get_lenta(
             "id": p.id,
             "title": p.title,
             "content": p.content,
-            "upvotes": p.upvote,
+            "upvote": p.upvote,
             "created_at": p.created_at,
             "user": {
                 "id": p.user_id,
@@ -105,11 +109,21 @@ async def get_lenta(
     ]
 
 
-@router.get("/my_posts/")
-async def get_my_posts(
-    user: User = Depends(get_current_valid_user),
-):
-    return await PostDao.find_my_posts(user_id=user.id)
+# @router.get("/my_posts", response_model=list[PostResponse])
+# async def get_my_posts(
+#     session: AsyncSession = Depends(get_async_session),
+#     user: User = Depends(get_current_valid_user),
+# ):
+#     posts = await PostDao.find_my_posts(user_id=user.id)
+#     return await PostDao.serialize_many_with_votes(posts, session, user.id)
+
+
+@router.get("/my_posts")
+async def get_my_posts(user: User = Depends(get_current_valid_user)):
+    post = await PostDao.find_my_posts(user_id=user.id)
+    if not post:
+        return {"detail": "Post not found"}
+    return post
 
 
 @router.get("/{post_id}")

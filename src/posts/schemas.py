@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, Field
@@ -29,7 +30,7 @@ class SubRedditUpdateSchema(BaseModel):
 
 class PostCreateSchema(BaseModel):
     subreddit_id: int
-    title: str = Field(...,  min_length=1, max_length=300)
+    title: str = Field(..., min_length=1, max_length=300)
     content: str = Field(None, max_length=40000)
 
 
@@ -42,6 +43,17 @@ class PostUpdateSchema(BaseModel):
     title: str = Field(..., min_length=1, max_length=300)
     content: str = Field(..., max_length=40000)
     subreddit_id: int
+
+
+class PostResponse(BaseModel):
+    id: int
+    title: str
+    content: str
+    subreddit_id: Optional[int]
+    user_id: int
+    upvotes: int
+    created_at: datetime
+    user_vote: Optional[bool] = None
 
 
 class CommentCreateSchema(BaseModel):

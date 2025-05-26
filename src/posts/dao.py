@@ -2,10 +2,12 @@ from asyncpg import UniqueViolationError
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config.database import async_session_maker
 from src.dao.base import BaseDao
 from src.posts.models import Comment, Post, Subreddit, Subscription, Vote
+from src.posts.schemas import PostResponse
 
 
 class ForumDao(BaseDao):
@@ -166,6 +168,35 @@ class PostDao(ForumDao):
             query = select(Post).filter_by(**filter_by).order_by(Post.created_at.desc())
             book = await session.execute(query)
             return book.scalars().all()
+
+    @staticmethod
+    async def serialize_many_with_votes(
+        posts: list[Post], session: AsyncSession, user_id: int
+    ) -> list[PostResponse]:
+        post_ids = [post.id for post in posts]
+
+        vote_query = await session.execute(
+            select(Vote).where(Vote.post_id.in_(post_ids), Vote.user_id == user_id)
+        )
+        votes = vote_query.scalars().all()
+        vote_map = {vote.post_id: vote for vote in votes}
+
+        result = []
+        for post in posts:
+            vote = vote_map.get(post.id)
+            result.append(
+                PostResponse(
+                    id=post.id,
+                    title=post.title,
+                    content=post.content,
+                    subreddit_id=post.subreddit_id,
+                    user_id=post.user_id,
+                    upvotes=post.upvote,
+                    created_at=post.created_at,
+                    user_vote=vote.is_upvote if vote else None,
+                )
+            )
+        return result
 
 
 class CommentDao(ForumDao):
