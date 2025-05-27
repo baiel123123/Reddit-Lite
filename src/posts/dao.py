@@ -202,9 +202,31 @@ class PostDao(ForumDao):
 class CommentDao(ForumDao):
     model = Comment
 
+    @classmethod
+    async def get_comments_by_post(cls, post_id, offset: int = 0, limit: int = 20):
+        async with async_session_maker() as session:
+            query = (
+                select(cls.model)
+                .filter_by(post_id=post_id)
+                .offset(offset)
+                .limit(limit)
+                .order_by(Comment.created_at.desc())
+            )
+            book = await session.execute(query)
+            return book.scalars().all()
+
 
 class VoteDao(ForumDao):
     model = Vote
+
+    @classmethod
+    async def get_user_votes_for_comments(cls, user_id, comment_ids: list[int]):
+        async with async_session_maker() as session:
+            query = select(Vote).filter(
+                Vote.user_id == user_id, Vote.comment_id.in_(comment_ids)
+            )
+            result = await session.execute(query)
+            return result.scalars().all()
 
 
 class SubscriptionDao(ForumDao):

@@ -109,15 +109,6 @@ async def get_lenta(
     ]
 
 
-# @router.get("/my_posts", response_model=list[PostResponse])
-# async def get_my_posts(
-#     session: AsyncSession = Depends(get_async_session),
-#     user: User = Depends(get_current_valid_user),
-# ):
-#     posts = await PostDao.find_my_posts(user_id=user.id)
-#     return await PostDao.serialize_many_with_votes(posts, session, user.id)
-
-
 @router.get("/my_posts")
 async def get_my_posts(user: User = Depends(get_current_valid_user)):
     post = await PostDao.find_my_posts(user_id=user.id)
