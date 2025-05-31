@@ -4,14 +4,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from src.config.database import get_async_session
-from src.posts.dao import PostDao
+from src.posts.dao import PostDao, VoteDao
 from src.posts.models import Post, Subscription
 from src.posts.schemas import (
     PostCreateSchema,
     PostFindSchema,
     PostUpdateSchema,
 )
-from src.users.dependencies import get_current_admin_user, get_current_valid_user
+from src.users.dependencies import (
+    get_current_admin_user,
+    get_current_user,
+    get_current_valid_user,
+)
 from src.users.models import User
 
 router = APIRouter(prefix="/posts", tags=["Работа с постами"])
@@ -128,3 +132,15 @@ async def get_post_by_id(post_id: int):
 @router.get("/user_posts/")
 async def get_user_posts(user_id: int):
     return await PostDao.find_my_posts(user_id=user_id)
+
+
+@router.get("/votes/by-user")
+async def get_post_votes_by_user(
+    ids: str = Query(..., description="Comma-separated list of IDs"),
+    current_user: User = Depends(get_current_user),
+):
+    id_list = [int(i) for i in ids.split(",")]
+
+    votes = await VoteDao.get_post_votes_by_user(current_user.id, id_list)
+
+    return {vote["target_id"]: vote["is_upvote"] for vote in votes}

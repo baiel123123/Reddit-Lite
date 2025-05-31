@@ -228,6 +228,19 @@ class VoteDao(ForumDao):
             result = await session.execute(query)
             return result.scalars().all()
 
+    @staticmethod
+    async def get_post_votes_by_user(user_id: int, post_ids: list[int]):
+        async with async_session_maker() as session:
+            query = select(Vote).where(
+                Vote.user_id == user_id, Vote.post_id.in_(post_ids)
+            )
+            result = await session.execute(query)
+            votes = result.scalars().all()
+
+        return [
+            {"target_id": vote.post_id, "is_upvote": vote.is_upvote} for vote in votes
+        ]
+
 
 class SubscriptionDao(ForumDao):
     model = Subscription
