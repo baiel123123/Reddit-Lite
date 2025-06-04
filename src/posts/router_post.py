@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import Numeric, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import selectinload
 
 from src.config.database import get_async_session
-from src.posts.dao import PostDao, VoteDao
+from src.posts.dao import PostDao, SubredditDao, VoteDao
 from src.posts.models import Post, Subscription
 from src.posts.schemas import (
     PostCreateSchema,
@@ -68,7 +68,7 @@ async def get_lenta(
     session: AsyncSession = Depends(get_async_session),
     user: User = Depends(get_current_valid_user),
 ):
-    query = select(Post).options(joinedload(Post.user), joinedload(Post.subreddit))
+    query = select(Post).options(selectinload(Post.user), selectinload(Post.subreddit))
 
     if sort_by in ("top", "new"):
         sub_ids_result = await session.execute(
@@ -126,6 +126,9 @@ async def get_post_by_id(post_id: int):
     post = await PostDao.find_one_or_none(id=post_id)
     if not post:
         return {"detail": "Post not found"}
+    subreddit = await SubredditDao.find_one_or_none_by_id(post.subreddit_id)
+    post = post.to_dict()
+    post["subreddit_name"] = subreddit.name
     return post
 
 
@@ -139,8 +142,19 @@ async def get_post_votes_by_user(
     ids: str = Query(..., description="Comma-separated list of IDs"),
     current_user: User = Depends(get_current_user),
 ):
+    if not ids:
+        return []
     id_list = [int(i) for i in ids.split(",")]
-
     votes = await VoteDao.get_post_votes_by_user(current_user.id, id_list)
 
     return {vote["target_id"]: vote["is_upvote"] for vote in votes}
+
+
+@router.get("/by-subreddit/{subreddit_id}")
+async def get_posts_by_subreddit(
+    subreddit_id: int, limit: int = Query(20, ge=1, le=100), offset: int = Query(0)
+):
+    posts = await PostDao.get_posts_by_subreddit_id(subreddit_id, limit, offset)
+    if not posts:
+        return {"detail": "Post not found"}
+    return posts

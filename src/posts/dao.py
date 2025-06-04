@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from src.config.database import async_session_maker
 from src.dao.base import BaseDao
@@ -23,15 +24,17 @@ class ForumDao(BaseDao):
                 session.add(new_instance)
                 try:
                     await session.commit()
+                    await session.refresh(new_instance)
                 except IntegrityError:
                     await session.rollback()
-                except SQLAlchemyError:
+                except SQLAlchemyError as e:
                     await session.rollback()
                     return {
-                        "error": "An unexpected error occurred while adding the post."
+                        "error": "An unexpected error occurred while adding the post.",
+                        "message": e,
                     }
 
-                return {"message": f"{cls.model.__name__} added successfully"}
+                return {"data": new_instance}
 
     @classmethod
     async def up_vote(cls, obj_id, is_upvote, user):
@@ -158,6 +161,17 @@ class SubredditDao(ForumDao):
 
                 return {"message": f"{cls.model.__name__} added successfully"}
 
+    @staticmethod
+    async def get_subreddit_with_creator(data_id: int):
+        async with async_session_maker() as session:
+            query = (
+                select(Subreddit)
+                .filter_by(id=data_id)
+                .options(joinedload(Subreddit.created_by))
+            )
+            result = await session.execute(query)
+            return result.scalar_one_or_none()
+
 
 class PostDao(ForumDao):
     model = Post
@@ -198,6 +212,21 @@ class PostDao(ForumDao):
             )
         return result
 
+    @staticmethod
+    async def get_posts_by_subreddit_id(
+        subreddit_id: int, limit: int = 20, offset: int = 20
+    ):
+        async with async_session_maker() as session:
+            query = (
+                select(Post)
+                .filter_by(subreddit_id=subreddit_id)
+                .order_by(Post.created_at)
+                .limit(limit)
+                .offset(offset)
+            )
+            result = await session.execute(query)
+            return result.scalars().all()
+
 
 class CommentDao(ForumDao):
     model = Comment
@@ -214,6 +243,14 @@ class CommentDao(ForumDao):
             )
             book = await session.execute(query)
             return book.scalars().all()
+
+    @staticmethod
+    async def add_reply(data: dict, user, session: AsyncSession) -> Comment:
+        new_comment = Comment(**data, user_id=user.id)
+        session.add(new_comment)
+        await session.commit()
+        await session.refresh(new_comment)
+        return new_comment
 
 
 class VoteDao(ForumDao):

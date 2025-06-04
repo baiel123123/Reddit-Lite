@@ -29,7 +29,8 @@ async def reply_to_comment(
     data = comment_data.dict()
     data["parent_comment_id"] = comment_id
 
-    return await CommentDao.add_forum(data, user)
+    new_comment = await CommentDao.add_forum(data, user)
+    return new_comment
 
 
 @router.get("/get_all/", dependencies=[Depends(get_current_admin_user)])
@@ -95,7 +96,7 @@ async def delete_upvote(
 
 
 @router.get("/comments/by_post/{post_id}")
-async def comments_with_user_votes(
+async def comments_by_posts(
     post_id: int,
     user: User = Depends(get_current_valid_user),
     offset: int = Query(0, ge=0),

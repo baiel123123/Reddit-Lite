@@ -1,5 +1,5 @@
 from sqlalchemy import ForeignKey, String, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, backref, mapped_column, relationship
 
 from src.config.database import Base, int_pk
 from src.users.models import User
@@ -64,6 +64,18 @@ class Post(Base):
     def __repr__(self):
         return f"{self.__class__.__name__}(id={self.id})"
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "upvote": self.upvote,
+            "updated_at": self.updated_at,
+            "content": self.content,
+            "user_id": self.user_id,
+            "subreddit_id": self.subreddit_id,
+            "created_at": self.created_at,
+        }
+
 
 class Comment(Base):
     id: Mapped[int_pk] = mapped_column(index=True)
@@ -75,7 +87,15 @@ class Comment(Base):
     post_id: Mapped[int] = mapped_column(
         ForeignKey("posts.id", ondelete="CASCADE"), index=True
     )
+    parent_comment_id: Mapped[int] = mapped_column(
+        ForeignKey("comments.id", ondelete="CASCADE"), nullable=True, index=True
+    )
 
+    replies = relationship(
+        "Comment",
+        backref=backref("parent_comment", remote_side="[Comment.id]"),
+        cascade="all, delete-orphan",
+    )
     votes = relationship("Vote", back_populates="comment", cascade="all, delete-orphan")
     user = relationship(User, back_populates="comments")
     post = relationship("Post", back_populates="comments")
@@ -83,8 +103,8 @@ class Comment(Base):
     def __repr__(self):
         return f"{self.__class__.__name__}(id={self.id})"
 
-    def to_dict(self):
-        return {
+    def to_dict(self, include_replies=False):
+        data = {
             "id": self.id,
             "post_id": self.post_id,
             "user_id": self.user_id,
@@ -92,7 +112,11 @@ class Comment(Base):
             "upvote": self.upvote,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
+            "parent_comment_id": self.parent_comment_id,
         }
+        if include_replies:
+            data["replies"] = [reply.to_dict() for reply in self.replies]
+        return data
 
 
 class Vote(Base):

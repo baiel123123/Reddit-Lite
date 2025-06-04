@@ -51,9 +51,8 @@ class PostResponse(BaseModel):
     content: str
     subreddit_id: Optional[int]
     user_id: int
-    upvotes: int
+    upvote: int
     created_at: datetime
-    user_vote: Optional[bool] = None
 
 
 class CommentCreateSchema(BaseModel):
@@ -73,3 +72,18 @@ class CommentResponse(BaseModel):
     created_at: datetime
     upvote: int
     user_vote: Optional[bool] = None
+
+
+class CommentResponseSchema(BaseModel):
+    id: int
+    post_id: int
+    user_id: Optional[int]
+    content: str
+    upvote: int
+    parent_comment_id: Optional[int]
+    created_at: str
+    updated_at: str
+    user_vote: Optional[bool]
+
+    class Config:
+        from_attributes = True

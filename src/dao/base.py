@@ -13,7 +13,7 @@ class BaseDao:
     @classmethod
     async def find_all(cls):
         async with async_session_maker() as session:
-            query = select(cls.model)
+            query = select(cls.model).order_by(cls.model.created_at.desc())
             book = await session.execute(query)
             return book.scalars().all()
 
@@ -40,7 +40,7 @@ class BaseDao:
 
     @classmethod
     async def add(cls, **values):
-        async with (async_session_maker() as session):
+        async with async_session_maker() as session:
             async with session.begin():
                 new_instance = cls.model(**values)
                 session.add(new_instance)
@@ -51,8 +51,10 @@ class BaseDao:
                     raise e
                 except DataError:
                     await session.rollback()
-                    raise HTTPException(status_code=400, detail="Некорректные данные (например, слишком длинный email)"
-                                        ) from err
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Некорректные данные (например, слишком длинный email)",
+                    ) from err
                 except SQLAlchemyError as e:
                     await session.rollback()
                     raise e
@@ -81,7 +83,11 @@ class BaseDao:
     async def delete_by_id(cls, obj_id: int):
         async with async_session_maker() as session:
             async with session.begin():
-                query = (sqlalchemy_delete(cls.model).filter_by(id=obj_id).returning(cls.model))
+                query = (
+                    sqlalchemy_delete(cls.model)
+                    .filter_by(id=obj_id)
+                    .returning(cls.model)
+                )
                 result = await session.execute(query)
                 try:
                     await session.commit()
