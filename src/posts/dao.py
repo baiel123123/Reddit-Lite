@@ -24,7 +24,6 @@ class ForumDao(BaseDao):
                 session.add(new_instance)
                 try:
                     await session.commit()
-                    await session.refresh(new_instance)
                 except IntegrityError:
                     await session.rollback()
                 except SQLAlchemyError as e:
@@ -33,7 +32,6 @@ class ForumDao(BaseDao):
                         "error": "An unexpected error occurred while adding the post.",
                         "message": e,
                     }
-
                 return {"data": new_instance}
 
     @classmethod
