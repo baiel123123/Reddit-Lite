@@ -1,8 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from src.posts.dao import CommentDao, VoteDao
+from src.posts.dao import CommentDao, PostDao, VoteDao
 from src.posts.schemas import CommentCreateSchema, CommentUpdateSchema
-from src.users.dependencies import get_current_admin_user, get_current_valid_user
+from src.users.dependencies import (
+    get_current_admin_user,
+    get_current_user_or_none,
+    get_current_valid_user,
+)
 from src.users.models import User
 
 router = APIRouter(prefix="/comments", tags=["Работа с комментариями"])
@@ -98,20 +102,38 @@ async def delete_upvote(
 @router.get("/comments/by_post/{post_id}")
 async def comments_by_posts(
     post_id: int,
-    user: User = Depends(get_current_valid_user),
+    user: User = Depends(get_current_user_or_none),
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
 ):
-    comments = await CommentDao.get_comments_by_post(post_id, offset, limit)
-    comment_ids = [comment.id for comment in comments]
-    user_votes = await VoteDao.get_user_votes_for_comments(user.id, comment_ids)
+    comments_with_children = await CommentDao.get_comments_with_children_by_post(
+        post_id, offset, limit
+    )
 
-    votes_map = {vote.comment_id: vote.is_upvote for vote in user_votes}
+    all_ids = []
+    for comment in comments_with_children:
+        all_ids.append(comment["id"])
+        all_ids.extend(child["id"] for child in comment.get("children", []))
 
-    response = []
-    for comment in comments:
-        comment_data = comment.to_dict()
-        comment_data["user_vote"] = votes_map.get(comment.id, None)
-        response.append(comment_data)
+    votes_map = {}
+    if user and all_ids:
+        user_votes = await VoteDao.get_user_votes_for_comments(user.id, all_ids)
+        votes_map = {vote.comment_id: vote.is_upvote for vote in user_votes}
 
-    return response
+    for comment in comments_with_children:
+        comment["user_vote"] = votes_map.get(comment["id"], None)
+        for child in comment.get("children", []):
+            child["user_vote"] = votes_map.get(child["id"], None)
+
+    return comments_with_children
+
+
+@router.get("/{comment_id}")
+async def get_comment_by_id(comment_id: int):
+    comment = await CommentDao.find_one_or_none_by_id(comment_id)
+    if not comment:
+        return {"detail": "Post not found"}
+    post = await PostDao.find_one_or_none_by_id(comment.post_id)
+    comment = comment.to_dict()
+    comment["post_title"] = post.title
+    return comment

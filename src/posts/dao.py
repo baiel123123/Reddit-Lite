@@ -230,17 +230,49 @@ class CommentDao(ForumDao):
     model = Comment
 
     @classmethod
-    async def get_comments_by_post(cls, post_id, offset: int = 0, limit: int = 20):
+    async def get_comments_with_children_by_post(
+        cls, post_id: int, offset: int = 0, limit: int = 20
+    ):
         async with async_session_maker() as session:
-            query = (
+            # 1. Корневые комментарии
+            root_query = (
                 select(cls.model)
-                .filter_by(post_id=post_id)
+                .filter_by(post_id=post_id, parent_comment_id=None)
+                .order_by(Comment.created_at.desc())
                 .offset(offset)
                 .limit(limit)
-                .order_by(Comment.created_at.desc())
             )
-            book = await session.execute(query)
-            return book.scalars().all()
+            root_result = await session.execute(root_query)
+            root_comments = root_result.scalars().all()
+
+            root_ids = [c.id for c in root_comments]
+            if not root_ids:
+                return []
+
+            # 2. Дети этих комментариев
+            child_query = (
+                select(cls.model)
+                .where(cls.model.parent_comment_id.in_(root_ids))
+                .order_by(Comment.created_at.asc())
+            )
+            child_result = await session.execute(child_query)
+            children = child_result.scalars().all()
+
+            # 3. Группировка детей по parent_id
+            children_map = {}
+            for child in children:
+                children_map.setdefault(child.parent_comment_id, []).append(child)
+
+            # 4. Формирование финальной структуры
+            result = []
+            for root in root_comments:
+                root_dict = root.to_dict()
+                root_dict["children"] = [
+                    c.to_dict() for c in children_map.get(root.id, [])
+                ]
+                result.append(root_dict)
+
+            return result
 
     @staticmethod
     async def add_reply(data: dict, user, session: AsyncSession) -> Comment:
@@ -249,6 +281,19 @@ class CommentDao(ForumDao):
         await session.commit()
         await session.refresh(new_comment)
         return new_comment
+
+    @staticmethod
+    async def get_comment_child(post_id, offset: int = 0, limit: int = 20):
+        async with async_session_maker() as session:
+            query = (
+                select(Comment)
+                .filter_by(post_id=post_id)
+                .offset(offset)
+                .limit(limit)
+                .order_by(Comment.created_at.asc())
+            )
+            book = await session.execute(query)
+            return book.scalars().all()
 
 
 class VoteDao(ForumDao):
