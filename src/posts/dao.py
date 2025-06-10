@@ -234,45 +234,36 @@ class CommentDao(ForumDao):
         cls, post_id: int, offset: int = 0, limit: int = 20
     ):
         async with async_session_maker() as session:
-            # 1. Корневые комментарии
-            root_query = (
+            # 1. Выбираем все комментарии для заданного поста
+            query = (
                 select(cls.model)
-                .filter_by(post_id=post_id, parent_comment_id=None)
-                .order_by(Comment.created_at.desc())
-                .offset(offset)
-                .limit(limit)
-            )
-            root_result = await session.execute(root_query)
-            root_comments = root_result.scalars().all()
-
-            root_ids = [c.id for c in root_comments]
-            if not root_ids:
-                return []
-
-            # 2. Дети этих комментариев
-            child_query = (
-                select(cls.model)
-                .where(cls.model.parent_comment_id.in_(root_ids))
+                .filter_by(post_id=post_id)
                 .order_by(Comment.created_at.asc())
             )
-            child_result = await session.execute(child_query)
-            children = child_result.scalars().all()
+            result = await session.execute(query)
+            all_comments = result.scalars().all()
 
-            # 3. Группировка детей по parent_id
-            children_map = {}
-            for child in children:
-                children_map.setdefault(child.parent_comment_id, []).append(child)
+            # 2. Преобразуем каждый комментарий в словарь и добавляем ключ "children"
+            comment_dict = {}
+            for comment in all_comments:
+                # Преобразуем без вложенных элементов: будем вручную набирать потомков
+                comment_dict[comment.id] = comment.to_dict(include_replies=False)
+                comment_dict[comment.id]["children"] = []
 
-            # 4. Формирование финальной структуры
-            result = []
-            for root in root_comments:
-                root_dict = root.to_dict()
-                root_dict["children"] = [
-                    c.to_dict() for c in children_map.get(root.id, [])
-                ]
-                result.append(root_dict)
+            # 3. Группировка: для каждого комментария, если parent_comment_id существует, добавляем его в родительский список
+            root_comments = []
+            for comment in all_comments:
+                if comment.parent_comment_id is None:
+                    root_comments.append(comment_dict[comment.id])
+                else:
+                    parent = comment_dict.get(comment.parent_comment_id)
+                    if parent:
+                        parent["children"].append(comment_dict[comment.id])
 
-            return result
+            # 4. Применяем пагинацию к корневым комментариям
+            paginated_root_comments = root_comments[offset : offset + limit]
+
+            return paginated_root_comments
 
     @staticmethod
     async def add_reply(data: dict, user, session: AsyncSession) -> Comment:

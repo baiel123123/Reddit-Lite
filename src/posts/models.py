@@ -115,7 +115,9 @@ class Comment(Base):
             "parent_comment_id": self.parent_comment_id,
         }
         if include_replies:
-            data["replies"] = [reply.to_dict() for reply in self.replies]
+            data["replies"] = [
+                reply.to_dict(include_replies=True) for reply in self.replies
+            ]
         return data
 
 
