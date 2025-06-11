@@ -110,7 +110,6 @@ async def comments_by_post(
     limit: int = Query(20, ge=1, le=100),
 ):
     async with async_session_maker() as session:
-        # 1. Выбираем все комментарии для данного поста (независимо от уровня вложенности)
         query = (
             select(Comment)
             .filter(Comment.post_id == post_id)
@@ -119,45 +118,36 @@ async def comments_by_post(
         result = await session.execute(query)
         all_comments = result.scalars().all()
 
-    # Если комментариев нет, возвращаем пустой список
     if not all_comments:
         return []
 
-    # 2. Преобразуем каждый комментарий в словарь и добавляем ключ "children", в который будем вкладывать дочерние комментарии
     comment_dict = {}
     for comment in all_comments:
-        # Используем метод to_dict без автодобавления дочерних (мы собираем дерево самостоятельно)
         data = comment.to_dict(include_replies=False)
         data["children"] = []
         comment_dict[comment.id] = data
 
-    # 3. Построение дерева: собираем корневые комментарии и вставляем дочерние в поле "children"
     root_comments = []
     for comment in all_comments:
         if comment.parent_comment_id is None:
-            # Корневой комментарий
             root_comments.append(comment_dict[comment.id])
         else:
             parent = comment_dict.get(comment.parent_comment_id)
             if parent:
                 parent["children"].append(comment_dict[comment.id])
             else:
-                # Если родитель не найден – можно залогировать эту ситуацию
                 print(
                     f"Не найден родительский комментарий для comment_id {comment.id}: parent_comment_id {comment.parent_comment_id}"
                 )
 
-    # 4. Применяем пагинацию к корневым комментариям (если нужно)
     paginated_root_comments = root_comments[offset : offset + limit]
 
-    # 5. Получаем информацию о голосах, если пользователь есть
     all_ids = [data["id"] for data in comment_dict.values()]
     votes_map = {}
     if user and all_ids:
         user_votes = await VoteDao.get_user_votes_for_comments(user.id, all_ids)
         votes_map = {vote.comment_id: vote.is_upvote for vote in user_votes}
 
-    # Рекурсивная функция, чтобы пройтись по всем уровням и добавить данные голосов
     def assign_votes(comment_item):
         comment_item["user_vote"] = votes_map.get(comment_item["id"], None)
         for child in comment_item["children"]:
@@ -166,7 +156,6 @@ async def comments_by_post(
     for comment in paginated_root_comments:
         assign_votes(comment)
 
-    # 6. Возвращаем дерево корневых комментариев с вложенными дочерними
     return paginated_root_comments
 
 
