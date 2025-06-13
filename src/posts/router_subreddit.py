@@ -109,3 +109,11 @@ async def get_subreddit_by_id(subreddit_id: int):
     if not subreddit:
         raise HTTPException(status_code=404, detail="Subreddit not found")
     return subreddit
+
+
+@router.get("/my-subreddits/{user_id}")
+async def get_my_subreddits(user: User = Depends(get_current_valid_user)):
+    subreddits = await SubredditDao.find_by_filter(created_by_id=user.id)
+    if not subreddits:
+        raise HTTPException(status_code=404, detail="Subreddits not found")
+    return subreddits
