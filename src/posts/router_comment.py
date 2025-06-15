@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 
 from src.config.database import async_session_maker
 from src.posts.dao import CommentDao, PostDao, VoteDao
-from src.posts.models import Comment
+from src.posts.models import Comment, Post
 from src.posts.schemas import CommentCreateSchema, CommentUpdateSchema
 from src.users.dependencies import (
     get_current_admin_user,
-    get_current_user_or_none,
+    get_current_user,
     get_current_valid_user,
 )
 from src.users.models import User
@@ -20,7 +21,7 @@ async def create_comment(
     comment_data: CommentCreateSchema,
     user: User = Depends(get_current_valid_user),
 ):
-    return await CommentDao.add_forum(comment_data.dict(), user)
+    return await CommentDao.add_comment(comment_data.dict(), user)
 
 
 @router.post("/reply_to_comment/{comment_id}")
@@ -70,24 +71,39 @@ async def delete_comment(
     comment_id: int,
     current_user: User = Depends(get_current_valid_user),
 ):
-    comment = await CommentDao.find_one_or_none_by_id(comment_id)
-    if not comment:
-        raise HTTPException(status_code=404, detail="Комментарий не найден")
+    async with async_session_maker() as session:
+        async with session.begin():
+            comment = await CommentDao.find_one_or_none_by_id(comment_id)
+            if not comment:
+                raise HTTPException(status_code=404, detail="Комментарий не найден")
 
-    if comment.user_id != current_user.id and current_user.role not in (2, 3):
-        raise HTTPException(
-            status_code=403, detail="Нет прав на удаление этого комментария"
-        )
+            if comment.user_id != current_user.id and current_user.role not in (2, 3):
+                raise HTTPException(
+                    status_code=403, detail="Нет прав на удаление этого комментария"
+                )
 
-    await CommentDao.delete_by_id(comment_id)
+            post = await session.get(Post, comment.post_id)
+            if post and post.comments_count > 0:
+                post.comments_count -= 1
+
+            await session.delete(comment)
+
+        try:
+            await session.commit()
+        except SQLAlchemyError as err:
+            await session.rollback()
+            raise HTTPException(
+                status_code=500, detail="Ошибка при удалении комментария"
+            ) from err
+
     return {"detail": "Комментарий удалён"}
 
 
-@router.post("/upvote/{comment_id}", dependencies=[Depends(get_current_valid_user)])
+@router.post("/upvote/{comment_id}", dependencies=[Depends(get_current_user)])
 async def upvote(
     comment_id: int,
     is_upvote: bool,
-    user: User = Depends(get_current_valid_user),
+    user: User = Depends(get_current_user),
 ):
     return await CommentDao.up_vote(comment_id, is_upvote, user)
 
@@ -97,7 +113,7 @@ async def upvote(
 )
 async def delete_upvote(
     comment_id: int,
-    user: User = Depends(get_current_valid_user),
+    user: User = Depends(get_current_user),
 ):
     return await CommentDao.remove_vote(comment_id, user)
 
@@ -105,7 +121,7 @@ async def delete_upvote(
 @router.get("/comments/by_post/{post_id}")
 async def comments_by_post(
     post_id: int,
-    user: User = Depends(get_current_user_or_none),
+    user: User = Depends(get_current_user),
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
 ):

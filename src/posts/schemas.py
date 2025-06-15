@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from fastapi import Form
+from pydantic import BaseModel, Field, constr
 
 
 class SubRedditSchema(BaseModel):
@@ -28,10 +29,16 @@ class SubRedditUpdateSchema(BaseModel):
     description: str = Field(..., min_length=1, max_length=50)
 
 
-class PostCreateSchema(BaseModel):
-    subreddit_id: int
-    title: str = Field(..., min_length=1, max_length=300)
-    content: str = Field(None, max_length=40000)
+class PostCreateForm:
+    def __init__(
+        self,
+        subreddit_id: int = Form(...),
+        title: constr(min_length=1, max_length=300) = Form(...),
+        content: constr(max_length=40000) = Form(None),
+    ):
+        self.subreddit_id = subreddit_id
+        self.title = title
+        self.content = content
 
 
 class PostFindSchema(BaseModel):

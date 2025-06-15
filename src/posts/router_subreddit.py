@@ -8,6 +8,7 @@ from src.posts.schemas import (
 )
 from src.users.dependencies import (
     get_current_admin_user,
+    get_current_user,
     get_current_valid_user,
 )
 from src.users.models import User
@@ -112,7 +113,7 @@ async def get_subreddit_by_id(subreddit_id: int):
 
 
 @router.get("/my-subreddits/{user_id}")
-async def get_my_subreddits(user: User = Depends(get_current_valid_user)):
+async def get_my_subreddits(user: User = Depends(get_current_user)):
     subreddits = await SubredditDao.find_by_filter(created_by_id=user.id)
     if not subreddits:
         raise HTTPException(status_code=404, detail="Subreddits not found")

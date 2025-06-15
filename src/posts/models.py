@@ -1,3 +1,5 @@
+from typing import Optional
+
 from sqlalchemy import ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, backref, mapped_column, relationship
 
@@ -47,6 +49,8 @@ class Post(Base):
     title: Mapped[str] = mapped_column(String(300))
     content: Mapped[str] = mapped_column(String(40000), nullable=True)
     upvote: Mapped[int] = mapped_column(default=0)
+    image_path: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)
+    comments_count: Mapped[int] = mapped_column(default=0)
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), index=True, nullable=True
     )
@@ -74,6 +78,8 @@ class Post(Base):
             "user_id": self.user_id,
             "subreddit_id": self.subreddit_id,
             "created_at": self.created_at,
+            "image_url": self.image_path,
+            "comments_count": self.comments_count,
         }
 
 

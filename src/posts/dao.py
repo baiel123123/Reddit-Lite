@@ -20,7 +20,6 @@ class ForumDao(BaseDao):
             async with session.begin():
                 new_instance = cls.model(**data)
                 new_instance.user = user
-
                 session.add(new_instance)
                 try:
                     await session.commit()
@@ -234,7 +233,6 @@ class CommentDao(ForumDao):
         cls, post_id: int, offset: int = 0, limit: int = 20
     ):
         async with async_session_maker() as session:
-            # 1. Выбираем все комментарии для заданного поста
             query = (
                 select(cls.model)
                 .filter_by(post_id=post_id)
@@ -243,14 +241,11 @@ class CommentDao(ForumDao):
             result = await session.execute(query)
             all_comments = result.scalars().all()
 
-            # 2. Преобразуем каждый комментарий в словарь и добавляем ключ "children"
             comment_dict = {}
             for comment in all_comments:
-                # Преобразуем без вложенных элементов: будем вручную набирать потомков
                 comment_dict[comment.id] = comment.to_dict(include_replies=False)
                 comment_dict[comment.id]["children"] = []
 
-            # 3. Группировка: для каждого комментария, если parent_comment_id существует, добавляем его в родительский список
             root_comments = []
             for comment in all_comments:
                 if comment.parent_comment_id is None:
@@ -260,7 +255,6 @@ class CommentDao(ForumDao):
                     if parent:
                         parent["children"].append(comment_dict[comment.id])
 
-            # 4. Применяем пагинацию к корневым комментариям
             paginated_root_comments = root_comments[offset : offset + limit]
 
             return paginated_root_comments
@@ -285,6 +279,35 @@ class CommentDao(ForumDao):
             )
             book = await session.execute(query)
             return book.scalars().all()
+
+    @staticmethod
+    async def add_comment(data, user):
+        async with async_session_maker() as session:
+            async with session.begin():
+                new_instance = Comment(**data)
+                new_instance.user = user
+
+                post = await CommentDao.find_one_or_none_by_id(new_instance.post_id)
+                if not post:
+                    await session.rollback()
+                    return {"error": "Post not found."}
+
+                post.comments_count += 1
+
+                session.add(new_instance)
+                await session.flush()
+                try:
+                    await session.commit()
+                except IntegrityError:
+                    await session.rollback()
+                    return {"error": "Integrity error occurred."}
+                except SQLAlchemyError as e:
+                    await session.rollback()
+                    return {
+                        "error": "An unexpected error occurred while adding the comment.",
+                        "message": str(e),
+                    }
+                return {"data": new_instance}
 
 
 class VoteDao(ForumDao):

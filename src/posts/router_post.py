@@ -1,4 +1,8 @@
-from fastapi import APIRouter, Depends, Query
+import os
+import shutil
+import uuid
+
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 from sqlalchemy import Numeric, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -7,7 +11,7 @@ from src.config.database import get_async_session
 from src.posts.dao import PostDao, SubredditDao, VoteDao
 from src.posts.models import Post, Subscription
 from src.posts.schemas import (
-    PostCreateSchema,
+    PostCreateForm,
     PostFindSchema,
     PostUpdateSchema,
 )
@@ -23,9 +27,27 @@ router = APIRouter(prefix="/posts", tags=["Работа с постами"])
 
 @router.post("/create/")
 async def create_post(
-    post_data: PostCreateSchema, user: User = Depends(get_current_valid_user)
+    form: PostCreateForm = Depends(),
+    image: UploadFile = File(None),
+    user: User = Depends(get_current_valid_user),
 ):
-    return await PostDao.add_forum(post_data.dict(), user)
+    image_path = None
+    if image:
+        ext = os.path.splitext(image.filename)[1]
+        filename = f"{uuid.uuid4().hex}{ext}"
+        file_path = os.path.join("media", filename)
+        os.makedirs("media", exist_ok=True)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(image.file, buffer)
+        image_path = file_path
+
+    post_data = {
+        "title": form.title,
+        "content": form.content,
+        "subreddit_id": form.subreddit_id,
+        "image_path": image_path,
+    }
+    return await PostDao.add_forum(post_data, user)
 
 
 @router.get("/get_all/", dependencies=[Depends(get_current_admin_user)])
@@ -49,14 +71,12 @@ async def delete_post(post_id: int):
 
 
 @router.post("/upvote/{post_id}")
-async def upvote(
-    post_id: int, is_upvote: bool, user: User = Depends(get_current_valid_user)
-):
+async def upvote(post_id: int, is_upvote: bool, user: User = Depends(get_current_user)):
     return await PostDao.up_vote(post_id, is_upvote, user)
 
 
 @router.post("/delete_upvote/{post_id}")
-async def delete_upvote(post_id: int, user: User = Depends(get_current_valid_user)):
+async def delete_upvote(post_id: int, user: User = Depends(get_current_user)):
     return await PostDao.remove_vote(post_id, user)
 
 
@@ -66,7 +86,7 @@ async def get_lenta(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0),
     session: AsyncSession = Depends(get_async_session),
-    user: User = Depends(get_current_valid_user),
+    user: User = Depends(get_current_user),
 ):
     query = select(Post).options(selectinload(Post.user), selectinload(Post.subreddit))
 
@@ -108,13 +128,15 @@ async def get_lenta(
                 "username": p.user.username,
             },
             "subreddit": {"id": p.subreddit_id, "name": p.subreddit.name},
+            "image_path": p.image_path,
+            "comments_count": p.comments_count,
         }
         for p in posts
     ]
 
 
 @router.get("/my_posts")
-async def get_my_posts(user: User = Depends(get_current_valid_user)):
+async def get_my_posts(user: User = Depends(get_current_user)):
     post = await PostDao.find_my_posts(user_id=user.id)
     if not post:
         return {"detail": "Post not found"}
