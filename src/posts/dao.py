@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 from src.config.database import async_session_maker
 from src.dao.base import BaseDao
@@ -176,9 +176,14 @@ class PostDao(ForumDao):
     @classmethod
     async def find_my_posts(cls, **filter_by):
         async with async_session_maker() as session:
-            query = select(Post).filter_by(**filter_by).order_by(Post.created_at.desc())
-            book = await session.execute(query)
-            return book.scalars().all()
+            query_post = (
+                select(Post)
+                .filter_by(**filter_by)
+                .order_by(Post.created_at.desc())
+                .options(selectinload(Post.subreddit), selectinload(Post.user))
+            )
+            result = await session.execute(query_post)
+            return result.scalars().all()
 
     @staticmethod
     async def serialize_many_with_votes(
@@ -287,7 +292,7 @@ class CommentDao(ForumDao):
                 new_instance = Comment(**data)
                 new_instance.user = user
 
-                post = await CommentDao.find_one_or_none_by_id(new_instance.post_id)
+                post = await session.get(Post, new_instance.post_id)
                 if not post:
                     await session.rollback()
                     return {"error": "Post not found."}
@@ -295,7 +300,6 @@ class CommentDao(ForumDao):
                 post.comments_count += 1
 
                 session.add(new_instance)
-                await session.flush()
                 try:
                     await session.commit()
                 except IntegrityError:

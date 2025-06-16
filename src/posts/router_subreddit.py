@@ -112,7 +112,7 @@ async def get_subreddit_by_id(subreddit_id: int):
     return subreddit
 
 
-@router.get("/my-subreddits/{user_id}")
+@router.get("/my-subreddits/")
 async def get_my_subreddits(user: User = Depends(get_current_user)):
     subreddits = await SubredditDao.find_by_filter(created_by_id=user.id)
     if not subreddits:

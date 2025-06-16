@@ -2,7 +2,7 @@ import os
 import shutil
 import uuid
 
-from fastapi import APIRouter, Depends, File, Query, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy import Numeric, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -125,7 +125,7 @@ async def get_lenta(
             "created_at": p.created_at,
             "user": {
                 "id": p.user_id,
-                "username": p.user.username,
+                "username": p.user.username if p.user else "Неизвестный",
             },
             "subreddit": {"id": p.subreddit_id, "name": p.subreddit.name},
             "image_path": p.image_path,
@@ -137,26 +137,35 @@ async def get_lenta(
 
 @router.get("/my_posts")
 async def get_my_posts(user: User = Depends(get_current_user)):
-    post = await PostDao.find_my_posts(user_id=user.id)
-    if not post:
-        return {"detail": "Post not found"}
-    return post
+    posts = await PostDao.find_my_posts(user_id=user.id)
+    if not posts:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
+        )
+    return posts
 
 
 @router.get("/{post_id}")
 async def get_post_by_id(post_id: int):
     post = await PostDao.find_one_or_none(id=post_id)
     if not post:
-        return {"detail": "Post not found"}
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
+        )
     subreddit = await SubredditDao.find_one_or_none_by_id(post.subreddit_id)
-    post = post.to_dict()
-    post["subreddit_name"] = subreddit.name
-    return post
+    post_data = post.to_dict()
+    post_data["subreddit_name"] = subreddit.name if subreddit else "Неизвестно"
+    return post_data
 
 
 @router.get("/user_posts/")
 async def get_user_posts(user_id: int):
-    return await PostDao.find_my_posts(user_id=user_id)
+    posts = await PostDao.find_my_posts(user_id=user_id)
+    if not posts:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
+        )
+    return posts
 
 
 @router.get("/votes/by-user")
@@ -178,5 +187,7 @@ async def get_posts_by_subreddit(
 ):
     posts = await PostDao.get_posts_by_subreddit_id(subreddit_id, limit, offset)
     if not posts:
-        return {"detail": "Post not found"}
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
+        )
     return posts
