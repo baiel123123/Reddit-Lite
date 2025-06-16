@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload, selectinload
 
 from src.config.database import async_session_maker
 from src.dao.base import BaseDao
@@ -19,19 +20,18 @@ class ForumDao(BaseDao):
             async with session.begin():
                 new_instance = cls.model(**data)
                 new_instance.user = user
-
                 session.add(new_instance)
                 try:
                     await session.commit()
                 except IntegrityError:
                     await session.rollback()
-                except SQLAlchemyError:
+                except SQLAlchemyError as e:
                     await session.rollback()
                     return {
-                        "error": "An unexpected error occurred while adding the post."
+                        "error": "An unexpected error occurred while adding the post.",
+                        "message": e,
                     }
-
-                return {"message": f"{cls.model.__name__} added successfully"}
+                return {"data": new_instance}
 
     @classmethod
     async def up_vote(cls, obj_id, is_upvote, user):
@@ -158,6 +158,17 @@ class SubredditDao(ForumDao):
 
                 return {"message": f"{cls.model.__name__} added successfully"}
 
+    @staticmethod
+    async def get_subreddit_with_creator(data_id: int):
+        async with async_session_maker() as session:
+            query = (
+                select(Subreddit)
+                .filter_by(id=data_id)
+                .options(joinedload(Subreddit.created_by))
+            )
+            result = await session.execute(query)
+            return result.scalar_one_or_none()
+
 
 class PostDao(ForumDao):
     model = Post
@@ -165,9 +176,14 @@ class PostDao(ForumDao):
     @classmethod
     async def find_my_posts(cls, **filter_by):
         async with async_session_maker() as session:
-            query = select(Post).filter_by(**filter_by).order_by(Post.created_at.desc())
-            book = await session.execute(query)
-            return book.scalars().all()
+            query_post = (
+                select(Post)
+                .filter_by(**filter_by)
+                .order_by(Post.created_at.desc())
+                .options(selectinload(Post.subreddit), selectinload(Post.user))
+            )
+            result = await session.execute(query_post)
+            return result.scalars().all()
 
     @staticmethod
     async def serialize_many_with_votes(
@@ -198,13 +214,130 @@ class PostDao(ForumDao):
             )
         return result
 
+    @staticmethod
+    async def get_posts_by_subreddit_id(
+        subreddit_id: int, limit: int = 20, offset: int = 20
+    ):
+        async with async_session_maker() as session:
+            query = (
+                select(Post)
+                .filter_by(subreddit_id=subreddit_id)
+                .order_by(Post.created_at)
+                .limit(limit)
+                .offset(offset)
+            )
+            result = await session.execute(query)
+            return result.scalars().all()
+
 
 class CommentDao(ForumDao):
     model = Comment
 
+    @classmethod
+    async def get_comments_with_children_by_post(
+        cls, post_id: int, offset: int = 0, limit: int = 20
+    ):
+        async with async_session_maker() as session:
+            query = (
+                select(cls.model)
+                .filter_by(post_id=post_id)
+                .order_by(Comment.created_at.asc())
+            )
+            result = await session.execute(query)
+            all_comments = result.scalars().all()
+
+            comment_dict = {}
+            for comment in all_comments:
+                comment_dict[comment.id] = comment.to_dict(include_replies=False)
+                comment_dict[comment.id]["children"] = []
+
+            root_comments = []
+            for comment in all_comments:
+                if comment.parent_comment_id is None:
+                    root_comments.append(comment_dict[comment.id])
+                else:
+                    parent = comment_dict.get(comment.parent_comment_id)
+                    if parent:
+                        parent["children"].append(comment_dict[comment.id])
+
+            paginated_root_comments = root_comments[offset : offset + limit]
+
+            return paginated_root_comments
+
+    @staticmethod
+    async def add_reply(data: dict, user, session: AsyncSession) -> Comment:
+        new_comment = Comment(**data, user_id=user.id)
+        session.add(new_comment)
+        await session.commit()
+        await session.refresh(new_comment)
+        return new_comment
+
+    @staticmethod
+    async def get_comment_child(post_id, offset: int = 0, limit: int = 20):
+        async with async_session_maker() as session:
+            query = (
+                select(Comment)
+                .filter_by(post_id=post_id)
+                .offset(offset)
+                .limit(limit)
+                .order_by(Comment.created_at.asc())
+            )
+            book = await session.execute(query)
+            return book.scalars().all()
+
+    @staticmethod
+    async def add_comment(data, user):
+        async with async_session_maker() as session:
+            async with session.begin():
+                new_instance = Comment(**data)
+                new_instance.user = user
+
+                post = await session.get(Post, new_instance.post_id)
+                if not post:
+                    await session.rollback()
+                    return {"error": "Post not found."}
+
+                post.comments_count += 1
+
+                session.add(new_instance)
+                try:
+                    await session.commit()
+                except IntegrityError:
+                    await session.rollback()
+                    return {"error": "Integrity error occurred."}
+                except SQLAlchemyError as e:
+                    await session.rollback()
+                    return {
+                        "error": "An unexpected error occurred while adding the comment.",
+                        "message": str(e),
+                    }
+                return {"data": new_instance}
+
 
 class VoteDao(ForumDao):
     model = Vote
+
+    @classmethod
+    async def get_user_votes_for_comments(cls, user_id, comment_ids: list[int]):
+        async with async_session_maker() as session:
+            query = select(Vote).filter(
+                Vote.user_id == user_id, Vote.comment_id.in_(comment_ids)
+            )
+            result = await session.execute(query)
+            return result.scalars().all()
+
+    @staticmethod
+    async def get_post_votes_by_user(user_id: int, post_ids: list[int]):
+        async with async_session_maker() as session:
+            query = select(Vote).where(
+                Vote.user_id == user_id, Vote.post_id.in_(post_ids)
+            )
+            result = await session.execute(query)
+            votes = result.scalars().all()
+
+        return [
+            {"target_id": vote.post_id, "is_upvote": vote.is_upvote} for vote in votes
+        ]
 
 
 class SubscriptionDao(ForumDao):

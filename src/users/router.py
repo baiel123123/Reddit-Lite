@@ -88,7 +88,7 @@ async def resend_code(
     summary="Получить всех пользователей",
     dependencies=[Depends(get_current_admin_user)],
 )
-async def get_all_users() -> list[UserSchema]:
+async def get_all_users():
     return await UserDao.find_all()
 
 
@@ -143,8 +143,8 @@ async def update_user(
     return user
 
 
-@router.post("/refresh-token")
-async def refresh_token(request: TokenRefreshRequest):
+@router.post("/refresh-token/")
+async def refresh_token(request: TokenRefreshRequest, response: Response):
     try:
         payload = jwt.decode(request.refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
@@ -161,6 +161,7 @@ async def refresh_token(request: TokenRefreshRequest):
 
     access_token = create_access_token(data={"sub": str(user.id)})
     refresh_token = create_refresh_token(data={"sub": str(user.id)})
+    response.set_cookie(key="users_access_token", value=access_token, httponly=True)
 
     return {
         "access_token": access_token,
