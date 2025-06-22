@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from src.config.database import get_async_session
-from src.posts.dao import PostDao, SubredditDao, VoteDao
+from src.posts.dao import PostDao, VoteDao
 from src.posts.models import Post, Subscription
 from src.posts.schemas import (
     PostCreateForm,
@@ -147,15 +147,12 @@ async def get_my_posts(user: User = Depends(get_current_user)):
 
 @router.get("/{post_id}")
 async def get_post_by_id(post_id: int):
-    post = await PostDao.find_one_or_none(id=post_id)
+    post = await PostDao.get_post_by_id(post_id)
     if not post:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
         )
-    subreddit = await SubredditDao.find_one_or_none_by_id(post.subreddit_id)
-    post_data = post.to_dict()
-    post_data["subreddit_name"] = subreddit.name if subreddit else "Неизвестно"
-    return post_data
+    return post
 
 
 @router.get("/user_posts/")

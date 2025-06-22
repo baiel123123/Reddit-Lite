@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import selectinload
 
 from src.config.database import async_session_maker
-from src.posts.dao import CommentDao, PostDao, VoteDao
+from src.posts.dao import CommentDao, VoteDao
 from src.posts.models import Comment, Post
 from src.posts.schemas import CommentCreateSchema, CommentUpdateSchema
 from src.users.dependencies import (
@@ -129,6 +130,7 @@ async def comments_by_post(
         query = (
             select(Comment)
             .filter(Comment.post_id == post_id)
+            .options(selectinload(Comment.user))
             .order_by(Comment.created_at.desc())
         )
         result = await session.execute(query)
@@ -141,6 +143,15 @@ async def comments_by_post(
     for comment in all_comments:
         data = comment.to_dict(include_replies=False)
         data["children"] = []
+
+        if comment.user:
+            data["user"] = {
+                "id": comment.user.id,
+                "username": comment.user.username,
+                "nickname": comment.user.nickname,
+            }
+        else:
+            data["user"] = None
         comment_dict[comment.id] = data
 
     root_comments = []
@@ -177,10 +188,7 @@ async def comments_by_post(
 
 @router.get("/{comment_id}")
 async def get_comment_by_id(comment_id: int):
-    comment = await CommentDao.find_one_or_none_by_id(comment_id)
+    comment = await CommentDao.get_comment_by_id(comment_id)
     if not comment:
         return {"detail": "Post not found"}
-    post = await PostDao.find_one_or_none_by_id(comment.post_id)
-    comment = comment.to_dict()
-    comment["post_title"] = post.title
     return comment

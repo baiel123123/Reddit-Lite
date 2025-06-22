@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import RedirectResponse
 
 from src.config.database import get_async_session
 from src.users.auth import (
@@ -168,3 +169,9 @@ async def refresh_token(request: TokenRefreshRequest, response: Response):
         "refresh_token": refresh_token,
         "token_type": "bearer",
     }
+
+
+@router.get("/avatar/{user_id}", response_class=RedirectResponse)
+async def get_avatar(user_id: str):
+    url = f"https://api.dicebear.com/9.x/pixel-art/svg?seed={user_id}"
+    return RedirectResponse(url)
