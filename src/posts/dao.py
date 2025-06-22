@@ -229,6 +229,17 @@ class PostDao(ForumDao):
             result = await session.execute(query)
             return result.scalars().all()
 
+    @staticmethod
+    async def get_post_by_id(post_id: int):
+        async with async_session_maker() as session:
+            query = (
+                select(Post)
+                .filter_by(id=post_id)
+                .options(joinedload(Post.subreddit), joinedload(Post.user))
+            )
+            result = await session.execute(query)
+            return result.scalar_one_or_none()
+
 
 class CommentDao(ForumDao):
     model = Comment
@@ -312,6 +323,17 @@ class CommentDao(ForumDao):
                         "message": str(e),
                     }
                 return {"data": new_instance}
+
+    @staticmethod
+    async def get_comment_by_id(comment_id: int):
+        async with async_session_maker() as session:
+            query = (
+                select(Comment)
+                .filter_by(id=comment_id)
+                .options(joinedload(Comment.user))
+            )
+            book = await session.execute(query)
+            return book.scalar_one_or_none()
 
 
 class VoteDao(ForumDao):
