@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import RedirectResponse
@@ -94,10 +94,17 @@ async def get_all_users():
 
 
 @router.get("/find/", summary="поиск юзера")
-async def find_users(request_body: UserFindSchema = Depends()) -> list[UserSchema]:
-    query = await UserDao.find_by_filter(
-        **request_body.dict(exclude_none=True), status="active"
-    )
+async def find_users(
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0),
+    request_body: UserFindSchema = Depends(),
+) -> list[UserSchema]:
+    request_body = request_body.dict(exclude_none=True)
+
+    if not request_body:
+        return []
+
+    query = await UserDao.find_by_filter(limit, offset, **request_body, status="active")
     return query
 
 

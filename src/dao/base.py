@@ -1,7 +1,7 @@
 from alembic.util import err
 from fastapi import HTTPException
+from sqlalchemy import String, cast, select, update
 from sqlalchemy import delete as sqlalchemy_delete
-from sqlalchemy import select, update
 from sqlalchemy.exc import DataError, IntegrityError, SQLAlchemyError
 
 from src.config.database import async_session_maker
@@ -18,11 +18,20 @@ class BaseDao:
             return book.scalars().all()
 
     @classmethod
-    async def find_by_filter(cls, **filter_by):
+    async def find_by_filter(cls, limit: int, offset: int, **filter_by):
         async with async_session_maker() as session:
-            query = select(cls.model).filter_by(**filter_by)
-            book = await session.execute(query)
-            return book.scalars().all()
+            if not filter_by:
+                return []
+            query = select(cls.model)
+            for field_name, search_value in filter_by.items():
+                column = getattr(cls.model, field_name)
+                if isinstance(search_value, str):
+                    query = query.where(cast(column, String).ilike(f"%{search_value}%"))
+                else:
+                    query = query.where(column == search_value)
+            query = query.offset(offset).limit(limit)
+            result = await session.execute(query)
+            return result.scalars().all()
 
     @classmethod
     async def find_one_or_none(cls, **filter_by):

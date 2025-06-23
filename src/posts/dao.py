@@ -1,6 +1,6 @@
 from asyncpg import UniqueViolationError
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import String, cast, or_, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
@@ -213,6 +213,26 @@ class PostDao(ForumDao):
                 )
             )
         return result
+
+    @classmethod
+    async def find_by_search(cls, limit: int, offset: int, search: str = None):
+        async with async_session_maker() as session:
+            if not search:
+                return []
+            query = (
+                select(Post)
+                .options(selectinload(cls.model.user))
+                .where(
+                    or_(
+                        cast(Post.title, String).ilike(f"%{search}%"),
+                        cast(Post.content, String).ilike(f"%{search}%"),
+                    )
+                )
+                .offset(offset)
+                .limit(limit)
+            )
+            results = await session.execute(query)
+            return results.scalars().all()
 
     @staticmethod
     async def get_posts_by_subreddit_id(
