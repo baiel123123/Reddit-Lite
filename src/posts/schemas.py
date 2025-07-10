@@ -44,6 +44,7 @@ class PostCreateForm:
 class PostFindSchema(BaseModel):
     id: Optional[int] = None
     title: Optional[str] = Field(None, min_length=1, max_length=300)
+    content: Optional[str] = Field(None, min_length=1, max_length=40000)
 
 
 class PostUpdateSchema(BaseModel):

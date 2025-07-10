@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from src.posts.dao import SubredditDao, SubscriptionDao
 from src.posts.schemas import (
@@ -29,8 +29,14 @@ async def get_all_subreddit():
 
 
 @router.get("/find/")
-async def find_subreddit(response_body: SubRedditFindSchema = Depends()):
-    return await SubredditDao.find_by_filter(**response_body.dict(exclude_none=True))
+async def find_subreddit(
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0),
+    response_body: SubRedditFindSchema = Depends(),
+):
+    return await SubredditDao.find_by_filter(
+        limit, offset, **response_body.dict(exclude_none=True)
+    )
 
 
 @router.put("/{subreddit_id}")

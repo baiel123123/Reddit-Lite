@@ -12,7 +12,6 @@ from src.posts.dao import PostDao, VoteDao
 from src.posts.models import Post, Subscription
 from src.posts.schemas import (
     PostCreateForm,
-    PostFindSchema,
     PostUpdateSchema,
 )
 from src.users.dependencies import (
@@ -56,8 +55,11 @@ async def get_all_posts():
 
 
 @router.get("/find/")
-async def find_post(response_body: PostFindSchema = Depends()):
-    return await PostDao.find_by_filter(**response_body.dict(exclude_none=True))
+async def find_post(
+    limit: int = Query(20, ge=1, le=100), offset: int = Query(0), search: str = None
+):
+    res = await PostDao.find_by_search(limit, offset, search)
+    return res
 
 
 @router.put("/update/{post_id}", dependencies=[Depends(get_current_valid_user)])
