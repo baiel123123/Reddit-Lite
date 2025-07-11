@@ -5,8 +5,8 @@ services:
     restart: always
     build: ./
     container_name: reddit_back
-    env_file:
-      - .env
+    # env_file:
+    #   - .env     ← remove or uncomment if you add .env
     command: >
       bash -c "alembic upgrade head &&
                uvicorn src.main:app 
