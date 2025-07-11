@@ -5,8 +5,8 @@ services:
     restart: always
     build: ./
     container_name: reddit_back
-    # env_file:
-    #   - .env     ← remove or uncomment if you add .env
+    env_file:
+      - .env
     command: >
       bash -c "alembic upgrade head &&
                uvicorn src.main:app 
@@ -33,7 +33,7 @@ services:
     image: reddit-front:latest
     container_name: reddit_front
     env_file:
-      - ../.env             # if you need REACT_APP_… vars
+      - .env             # if you need REACT_APP_… vars
     depends_on:
       - back
     ports:
