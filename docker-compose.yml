@@ -1,6 +1,5 @@
 version: '3.12'
 
-
 services:
   back:
     restart: always
@@ -8,7 +7,12 @@ services:
     container_name: reddit_back
     env_file:
       - .env
-    command: bash -c "alembic upgrade head && uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload"
+    command: >
+      bash -c "alembic upgrade head &&
+               uvicorn src.main:app 
+                       --host 0.0.0.0 
+                       --port 8000 
+                       --reload"
     volumes:
       - ./:/app
       - static_volume:/app/staticfiles
@@ -19,6 +23,24 @@ services:
       - db
       - redis
       - celery
+    networks:
+      - appnet
+
+  frontend:
+    build:
+      context: ./reddit-front
+      dockerfile: Dockerfile
+    image: reddit-front:latest
+    container_name: reddit_front
+    env_file:
+      - ../.env             # if you need REACT_APP_… vars
+    depends_on:
+      - back
+    ports:
+      - "8080:80"           # host : container
+    networks:
+      - appnet
+
   db:
     restart: always
     image: postgres:16.3-alpine
@@ -26,28 +48,40 @@ services:
     env_file:
       - .env
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+    networks:
+      - appnet
+
   redis:
     image: redis:7
+    container_name: reddit_redis
     ports:
       - "6379:6379"
     restart: always
+    networks:
+      - appnet
+
   celery:
     build:
-      context: .
-    container_name: celery
+      context: ./
+    container_name: reddit_celery
     command: poetry run celery -A src.celery_app:celery_app worker --loglevel=info
     volumes:
-      - .:/app
-    depends_on:
-      - redis
+      - ./:/app
     env_file:
       - .env
-
+    depends_on:
+      - redis
+    networks:
+      - appnet
 
 volumes:
   postgres_data:
   static_volume:
   media_volume:
+
+networks:
+  appnet:
+    driver: bridge
