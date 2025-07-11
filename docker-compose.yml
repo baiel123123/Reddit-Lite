@@ -3,7 +3,7 @@ version: '3.12'
 services:
   back:
     restart: always
-    build: ./reddit_back
+    build: ./
     container_name: reddit_back
     env_file:
       - .env
