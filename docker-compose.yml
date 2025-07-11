@@ -28,7 +28,7 @@ services:
 
   frontend:
     build:
-      context: ./reddit-front
+      context: ../reddit-front
       dockerfile: Dockerfile
     image: reddit-front:latest
     container_name: reddit_front
