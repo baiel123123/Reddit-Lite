@@ -13,7 +13,7 @@ from src.users.dependencies import (
 )
 from src.users.models import User
 
-router = APIRouter(prefix="/subreddit", tags=["Работа с сабреддитами"])
+router = APIRouter(prefix="/subreddit", tags=["subreddits"])
 
 
 @router.post("/create/")
