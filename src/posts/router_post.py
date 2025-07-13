@@ -21,7 +21,7 @@ from src.users.dependencies import (
 )
 from src.users.models import User
 
-router = APIRouter(prefix="/posts", tags=["Работа с постами"])
+router = APIRouter(prefix="/posts", tags=["posts"])
 
 
 @router.post("/create/")

@@ -31,7 +31,7 @@ from src.users.schemas import (
     VerifyEmailSchema,
 )
 
-router = APIRouter(prefix="/users", tags=["Работа с пользователями"])
+router = APIRouter(prefix="/users", tags=["users"])
 
 SECRET_KEY = auth_data["secret_key"]
 ALGORITHM = auth_data["algorithm"]

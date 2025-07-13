@@ -14,7 +14,7 @@ from src.users.dependencies import (
 )
 from src.users.models import User
 
-router = APIRouter(prefix="/comments", tags=["Работа с комментариями"])
+router = APIRouter(prefix="/comments", tags=["comments"])
 
 
 @router.post("/create/", status_code=status.HTTP_201_CREATED)
