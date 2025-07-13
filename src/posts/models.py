@@ -11,6 +11,7 @@ class Subreddit(Base):
     id: Mapped[int_pk]
     name: Mapped[str] = mapped_column(String(25), unique=True, index=True)
     description: Mapped[str] = mapped_column(String(50))
+    subscribers_count: Mapped[int] = mapped_column(default=0, server_default="0")
     created_by_id: Mapped[int] = mapped_column(
         ForeignKey("users.id"), index=True, nullable=True
     )
