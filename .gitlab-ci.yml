@@ -44,9 +44,9 @@ deploy-job:      # This job runs in the deploy stage.
   before_script:
     - apk add --no-cache openssh
   script:
+    - mkdir -p ~/.ssh
     - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
-    - mkdir -p ~/.ssh
     - ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" 'mkdir -p ~/project'
     - tar czf project.tar.gz ./*
     - scp -o StrictHostKeyChecking=no project.tar.gz "$SSH_USER@$SSH_HOST":~/project/
