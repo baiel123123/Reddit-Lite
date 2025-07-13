@@ -47,12 +47,12 @@ deploy-job:      # This job runs in the deploy stage.
     - mkdir -p ~/.ssh
     - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
-    - ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" 'mkdir -p ~/project'
-    - tar czf project.tar.gz ./*
-    - scp -o StrictHostKeyChecking=no project.tar.gz "$SSH_USER@$SSH_HOST":~/project/
+    - ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" 'mkdir -p ~/reddit'
+    - tar czf reddit.tar.gz ./*
+    - scp -o StrictHostKeyChecking=no reddit.tar.gz "$SSH_USER@$SSH_HOST":~/reddit/
     - ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" '
-        cd ~/project &&
-        tar xzf project.tar.gz &&
+        cd ~/reddit &&
+        tar xzf reddit.tar.gz &&
         chmod +x deploy.sh &&
         ./deploy.sh
       '
