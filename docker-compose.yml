@@ -25,14 +25,14 @@ services:
     build:
       context: ../reddit-front
       dockerfile: Dockerfile
-    image: reddit-front:latest
+    image: registry.gitlab.com/kawqe123123124/reddit-front:latest
     container_name: reddit_front
     env_file:
-      - .env             # if you need REACT_APP_… vars
+      - .env
     depends_on:
       - back
     ports:
-      - "8080:80"           # host : container
+      - "8080:80"
     networks:
       - appnet
 
