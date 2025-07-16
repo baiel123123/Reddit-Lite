@@ -35,7 +35,7 @@ ruff-lint:
     - merge_requests
     - branches
 
-deploy-job:      # This job runs in the deploy stage.
+deploy-job:
   stage: deploy
   image: alpine:latest
   only:
