@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: Environment = Environment.local
     PROJECT_NAME: str = "My FastAPI App"
     API_V1_STR: str = "/api/v1"
+    FRONTEND_HOST: str = "http://localhost:3000"
 
     SENTRY_DSN: Optional[str] = None
 
