@@ -1,58 +1,32 @@
-stages:          # List of stages for jobs, and their order of execution
-  - build
-  - test
-  - deploy
+image: docker:latest
+services:
+  - docker:dind
 
-build-job:       # This job runs in the build stage, which runs first.
+variables:
+  DOCKER_TLS_CERTDIR: ""
+  IMAGE: "$CI_REGISTRY_IMAGE"
+
+stages:
+  - test
+  - build
+
+before_script:
+  - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+
+test:
+  stage: test
+  script:
+    - poetry install
+    - poetry run pytest --cov
+    - poetry run ruff check .
+
+build:
   stage: build
   script:
-    - echo "Compiling the code..."
-    - echo "Compile complete."
-
-unit-test-job:   # This job runs in the test stage.
-  stage: test    # It only starts when the job in the build stage completes successfully.
-  script:
-    - echo "Running unit tests... This will take about 60 seconds."
-    - sleep 60
-    - echo "Code coverage is 90%"
-
-lint-test-job:   # This job also runs in the test stage.
-  stage: test    # It can run at the same time as unit-test-job (in parallel).
-  script:
-    - echo "Linting code... This will take about 10 seconds."
-    - sleep 10
-    - echo "No lint issues found."
-
-
-ruff-lint:
-  stage: test
-  image: python:3.12
-  script:
-    - pip install poetry
-    - poetry install
-    - poetry run ruff check .
-  only:
-    - merge_requests
-    - branches
-
-deploy-job:
-  stage: deploy
-  image: alpine:latest
+    - docker build -t "$IMAGE:$CI_COMMIT_SHA" .
+    - docker push "$IMAGE:$CI_COMMIT_SHA"
+    - docker tag "$IMAGE:$CI_COMMIT_SHA" "$IMAGE:latest"
+    - docker push "$IMAGE:latest"
   only:
     - main
-  environment: production
-  before_script:
-    - apk add --no-cache openssh
-  script:
-    - mkdir -p ~/.ssh
-    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-    - chmod 600 ~/.ssh/id_rsa
-    - ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" 'mkdir -p ~/reddit'
-    - tar czf reddit.tar.gz ./*
-    - scp -o StrictHostKeyChecking=no reddit.tar.gz "$SSH_USER@$SSH_HOST":~/reddit/
-    - ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" '
-        cd ~/reddit &&
-        tar xzf reddit.tar.gz &&
-        chmod +x deploy.sh &&
-        ./deploy.sh
-      '
+    - merge_requests

@@ -33,7 +33,7 @@ app = FastAPI(
 
 
 origins = settings.all_cors_origins
-print("CORS origins:", origins)
+
 
 app.add_middleware(
     CORSMiddleware,
