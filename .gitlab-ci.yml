@@ -9,6 +9,7 @@ variables:
 stages:
   - test
   - build
+  - trigger_deploy
 
 before_script:
   - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
@@ -36,3 +37,10 @@ build:
   only:
     - main
     - merge_requests
+
+trigger_deploy:
+  stage: trigger_deploy
+  trigger:
+    project: kawqe12312314/reddit-deploy
+    branch: main
+  when: on_success
