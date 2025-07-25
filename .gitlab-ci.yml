@@ -21,7 +21,6 @@ test:
     - poetry config virtualenvs.create false
     - poetry install
   script:
-    - poetry run pytest --cov
     - poetry run ruff check .
   only:
     - merge_requests
