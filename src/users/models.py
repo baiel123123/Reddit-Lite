@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum as PyEnum
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String
+from sqlalchemy import DateTime, Enum, ForeignKey, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from src.config.database import Base, int_pk
@@ -45,9 +45,9 @@ class Role(Base):
 
 
 class UserStatus(str, PyEnum):
-    active = "active"
-    banned = "banned"
-    deleted = "deleted"
+    ACTIVE = "active"
+    BANNED = "banned"
+    DELETED = "deleted"
 
 
 class User(Base):
@@ -71,9 +71,11 @@ class User(Base):
     verification_code: Mapped[str] = mapped_column(nullable=True)
     verification_expires = mapped_column(DateTime(timezone=True), nullable=True)
     status: Mapped[UserStatus] = mapped_column(
-        Enum(UserStatus), default=UserStatus.active, server_default="active"
+        Enum(UserStatus, name="userstatus"), 
+        default=UserStatus.ACTIVE, 
+        server_default=text("ACTIVE"),
+        nullable=False,
     )
-
     subscriptions = relationship(
         "Subscription", back_populates="user", cascade="all, delete-orphan"
     )
