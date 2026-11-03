@@ -1,5 +1,5 @@
 from alembic.util import err
-from fastapi import HTTPException
+from fastapi import HTTPException, Query
 from sqlalchemy import String, cast, select, update
 from sqlalchemy import delete as sqlalchemy_delete
 from sqlalchemy.exc import DataError, IntegrityError, SQLAlchemyError
@@ -18,7 +18,7 @@ class BaseDao:
             return book.scalars().all()
 
     @classmethod
-    async def find_by_filter(cls, limit: int, offset: int, **filter_by):
+    async def find_by_filter(cls, limit: int = 20, offset: int = 0, **filter_by):
         async with async_session_maker() as session:
             if not filter_by:
                 return []
@@ -29,6 +29,7 @@ class BaseDao:
                     query = query.where(cast(column, String).ilike(f"%{search_value}%"))
                 else:
                     query = query.where(column == search_value)
+            print(type(offset), type(limit))
             query = query.offset(offset).limit(limit)
             result = await session.execute(query)
             return result.scalars().all()
