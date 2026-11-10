@@ -43,3 +43,16 @@ show-fixes = true        # Показывать, что именно испра�
 
 lint.select = ["E", "F", "B", "I"]   # Включить ошибки: pycodestyle (E), pyflakes (F), bugbear (B), isort (I)
 lint.ignore = ["E501", "B008"]
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.2.0,<10.0.0)",
+    "pytest-asyncio (>=1.4.1.post1,<2.0.0)",
+    "httpx (>=0.28.1,<0.29.0)",
+    "pytest-cov (>=7.1.0,<8.0.0)"
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-ra"
