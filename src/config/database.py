@@ -15,7 +15,12 @@ from src.config.settings import get_db_url
 DATABASE_URL = get_db_url()
 
 
-engine = create_async_engine(DATABASE_URL)
+engine = create_async_engine(
+    DATABASE_URL,
+    pool_size=5,
+    max_overflow=10,
+    pool_pre_ping=True,
+)
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
 int_pk = Annotated[int, mapped_column(primary_key=True)]
